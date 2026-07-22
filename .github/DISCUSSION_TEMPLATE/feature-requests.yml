@@ -1,0 +1,52 @@
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing an idea for Cocoon.
+
+        Please search existing discussions first. If you find a similar request, upvote it and add your use case there so related feedback stays together.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the need or frustration behind the request rather than only the proposed feature.
+      placeholder: "I find it difficult to ... because ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: What would you like Cocoon to do?
+      description: Explain the behaviour or outcome you would find useful.
+      placeholder: "It would help if Cocoon could ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today?
+      description: Tell us about any current workaround or alternative you have tried.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add examples, mock-ups, screenshots, or links that help explain the request.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing discussions and did not find an equivalent request.
+          required: true
+        - label: This request describes one feature or closely related set of changes.
+          required: true

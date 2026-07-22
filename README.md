@@ -107,7 +107,7 @@ The complete platform list is available in [index.json](platforms/index.json).
 
 ## Support
 
-For bug reports and feature requests, please use [Cocoon Shell Feedback](https://feedback.cocoon-shell.com) or [Join our Discord](https://discord.gg/cocoon).
+For bug reports and feature requests, please use [GitHub Discussions](https://github.com/inssekt/CocoonFE/discussions). For general help and community chat, [join our Discord](https://discord.gg/cocoon).
 
 ---
 

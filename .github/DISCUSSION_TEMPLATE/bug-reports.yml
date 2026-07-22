@@ -1,0 +1,76 @@
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Cocoon.
+
+        Please search existing discussions before submitting a report. Do not include passwords, API keys, personal information, or details of a security vulnerability in this public form.
+
+  - type: input
+    id: cocoon-version
+    attributes:
+      label: Cocoon version
+      description: The version or build where you encountered the problem.
+      placeholder: "For example: 1.2.3"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      description: Tell us which device and Android version you are using.
+      placeholder: "For example: Retroid Pocket 5, Android 13"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen instead.
+      placeholder: |
+        What happened:
+
+        What I expected:
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Give us the smallest reliable set of steps that triggers the problem.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: frequency
+    attributes:
+      label: How often does it happen?
+      description: Let us know whether this happens every time, intermittently, or only under particular conditions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add screenshots, screen recordings, logs, or anything else that may help. Remove sensitive information first.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing discussions and did not find this problem already reported.
+          required: true
+        - label: I have not included passwords, personal information, or other sensitive data.
+          required: true
