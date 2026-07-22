@@ -7,12 +7,18 @@ body:
 
         Please search existing discussions before submitting a report. Do not include passwords, API keys, personal information, or details of a security vulnerability in this public form.
 
-  - type: input
-    id: cocoon-version
+  - type: dropdown
+    id: cocoon-release
     attributes:
-      label: Cocoon version
-      description: The version or build where you encountered the problem.
-      placeholder: "For example: 1.2.3"
+      label: Cocoon release
+      description: Choose the release where you encountered the problem. See https://github.com/inssekt/CocoonFE/releases for release details.
+      options:
+        - Beta 3.0 (latest)
+        - Beta 2.2
+        - Beta 2.1
+        - Beta 2.02 or earlier
+        - Development or unreleased build
+        - Not sure
     validations:
       required: true
 
