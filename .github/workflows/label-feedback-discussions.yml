@@ -1,0 +1,113 @@
+name: Label feedback discussions
+
+on:
+  discussion:
+    types:
+      - created
+      - edited
+
+permissions:
+  contents: read
+  discussions: write
+  issues: read
+
+jobs:
+  label-by-area:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply selected area labels
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const body = context.payload.discussion.body || '';
+            const section = body.match(
+              /### What does this relate to\?\s*\n+([\s\S]*?)(?=\n### |$)/i,
+            )?.[1] || '';
+
+            const areaLabels = new Map([
+              ['Crash or freeze', 'Crash'],
+              ['Audio', 'Audio'],
+              ['User interface', 'UI'],
+              ['Emulator or game launching', 'Emulator'],
+              ['Library, scanning, or folders', 'Library'],
+              ['Scraping, metadata, or artwork', 'Metadata'],
+              ['Themes or customisation', 'Themes'],
+              ['Controls or navigation', 'Controls'],
+              ['Performance', 'Performance'],
+              ['Integrations', 'Integrations'],
+              ['Other', 'Other'],
+            ]);
+
+            const selectedNames = new Set(
+              [...areaLabels]
+                .filter(([formOption]) => section.includes(formOption))
+                .map(([, labelName]) => labelName),
+            );
+
+            const { repository } = await github.graphql(
+              `query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  labels(first: 100) {
+                    nodes { id name }
+                  }
+                  discussion(number: $number) {
+                    id
+                    labels(first: 100) {
+                      nodes { id name }
+                    }
+                  }
+                }
+              }`,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                number: context.payload.discussion.number,
+              },
+            );
+
+            const managedNames = new Set(areaLabels.values());
+            const labelsByName = new Map(
+              repository.labels.nodes.map((label) => [label.name, label]),
+            );
+            const currentManaged = repository.discussion.labels.nodes.filter(
+              (label) => managedNames.has(label.name),
+            );
+
+            const removeIds = currentManaged
+              .filter((label) => !selectedNames.has(label.name))
+              .map((label) => label.id);
+            const currentNames = new Set(
+              currentManaged.map((label) => label.name),
+            );
+            const addIds = [...selectedNames]
+              .filter((name) => !currentNames.has(name))
+              .map((name) => labelsByName.get(name)?.id)
+              .filter(Boolean);
+
+            if (removeIds.length > 0) {
+              await github.graphql(
+                `mutation($labelableId: ID!, $labelIds: [ID!]!) {
+                  removeLabelsFromLabelable(
+                    input: { labelableId: $labelableId, labelIds: $labelIds }
+                  ) { clientMutationId }
+                }`,
+                {
+                  labelableId: repository.discussion.id,
+                  labelIds: removeIds,
+                },
+              );
+            }
+
+            if (addIds.length > 0) {
+              await github.graphql(
+                `mutation($labelableId: ID!, $labelIds: [ID!]!) {
+                  addLabelsToLabelable(
+                    input: { labelableId: $labelableId, labelIds: $labelIds }
+                  ) { clientMutationId }
+                }`,
+                {
+                  labelableId: repository.discussion.id,
+                  labelIds: addIds,
+                },
+              );
+            }

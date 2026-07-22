@@ -1,4 +1,6 @@
 title: "[Bug]: "
+labels:
+  - bug
 body:
   - type: markdown
     attributes:
