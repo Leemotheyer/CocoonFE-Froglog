@@ -7,18 +7,12 @@ body:
 
         Please search existing discussions before submitting a report. Do not include passwords, API keys, personal information, or details of a security vulnerability in this public form.
 
-  - type: dropdown
-    id: cocoon-release
+  - type: input
+    id: cocoon-version
     attributes:
-      label: Cocoon release
-      description: Choose the release where you encountered the problem. See https://github.com/inssekt/CocoonFE/releases for release details.
-      options:
-        - Beta 3.0 (latest)
-        - Beta 2.2
-        - Beta 2.1
-        - Beta 2.02 or earlier
-        - Development or unreleased build
-        - Not sure
+      label: Cocoon version
+      description: The version or build where you encountered the problem.
+      placeholder: "For example: Beta 3.0"
     validations:
       required: true
 
@@ -28,6 +22,27 @@ body:
       label: Device and Android version
       description: Tell us which device and Android version you are using.
       placeholder: "For example: Retroid Pocket 5, Android 13"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: areas
+    attributes:
+      label: What does this relate to?
+      description: Select every area that applies.
+      multiple: true
+      options:
+        - Crash or freeze
+        - Audio
+        - User interface
+        - Emulator or game launching
+        - Library, scanning, or folders
+        - Scraping, metadata, or artwork
+        - Themes or customisation
+        - Controls or navigation
+        - Performance
+        - Integrations
+        - Other
     validations:
       required: true
 

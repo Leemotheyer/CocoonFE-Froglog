@@ -7,6 +7,27 @@ body:
 
         Please search existing discussions first. If you find a similar request, upvote it and add your use case there so related feedback stays together.
 
+  - type: dropdown
+    id: areas
+    attributes:
+      label: What does this relate to?
+      description: Select every area that applies.
+      multiple: true
+      options:
+        - Crash or freeze
+        - Audio
+        - User interface
+        - Emulator or game launching
+        - Library, scanning, or folders
+        - Scraping, metadata, or artwork
+        - Themes or customisation
+        - Controls or navigation
+        - Performance
+        - Integrations
+        - Other
+    validations:
+      required: true
+
   - type: textarea
     id: problem
     attributes:
