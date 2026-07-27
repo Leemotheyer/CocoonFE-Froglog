@@ -18,7 +18,7 @@ ANCHOR = """    invoke-direct/range {v12 .. v22}, Lve/w4;-><init>(Ljava/lang/Str
     .line 220
     move-result-object v10"""
 
-# Registers v0–v15 only for non-/range invoke-* (method b uses v11 = composer, v3 = selected list).
+# Method b: non-range ops only v0–v15; filled-new-array same. Save v11 (composer) and v12 before v4..v14 /range.
 BATCH_BLOCK = """    invoke-direct/range {v12 .. v22}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
 
     sget-object v0, Landroidx/compose/ui/platform/AndroidCompositionLocals_androidKt;->b:Lz0/m2;
@@ -59,7 +59,73 @@ BATCH_BLOCK = """    invoke-direct/range {v12 .. v22}, Lve/w4;-><init>(Ljava/lan
     :froglog_batch_invoke
     check-cast v2, Lwa/a;
 
+    move-object v15, v11
+
+    move-object v0, v12
+
     new-instance v4, Lve/w4;
+
+    const-string v5, "X"
+
+    sget-object v6, Lme/b;->SHARE:Lme/b;
+
+    move-object v7, v2
+
+    const/16 v8, 0x0
+
+    const/16 v9, 0x0
+
+    const/16 v10, 0x0
+
+    const/4 v11, 0x0
+
+    const/16 v12, 0x0
+
+    const/16 v13, 0x0
+
+    const/16 v14, 0x3f0
+
+    invoke-direct/range {v4 .. v14}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
+
+    move-object v11, v15
+
+    move-object v12, v0
+
+    filled-new-array {v4, v12}, [Lve/w4;
+
+    move-result-object v0
+
+    invoke-static {v0}, Lia/k;->z0([Ljava/lang/Object;)Ljava/util/List;
+
+    move-result-object v10"""
+
+BATCH_WRONG = """    new-instance v20, Lve/w4;
+
+    const-string v21, "X"
+
+    sget-object v22, Lme/b;->SHARE:Lme/b;
+
+    move-object/from16 v23, v2
+
+    const/16 v24, 0x0
+
+    const/16 v25, 0x0
+
+    const/16 v26, 0x0
+
+    const/16 v27, 0x0
+
+    const/16 v28, 0x0
+
+    const/16 v29, 0x0
+
+    const/16 v30, 0x3f0
+
+    invoke-direct/range {v20 .. v30}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
+
+    filled-new-array {v20, v12}, [Lve/w4;"""
+
+BATCH_WRONG2 = """    new-instance v4, Lve/w4;
 
     const-string v5, "X"
 
@@ -79,13 +145,41 @@ BATCH_BLOCK = """    invoke-direct/range {v12 .. v22}, Lve/w4;-><init>(Ljava/lan
 
     invoke-direct/range {v4 .. v14}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
 
-    filled-new-array {v4, v12}, [Lve/w4;
+    filled-new-array {v4, v12}, [Lve/w4;"""
 
-    move-result-object v0
+BATCH_FIXED = """    move-object v15, v11
 
-    invoke-static {v0}, Lia/k;->z0([Ljava/lang/Object;)Ljava/util/List;
+    move-object v0, v12
 
-    move-result-object v10"""
+    new-instance v4, Lve/w4;
+
+    const-string v5, "X"
+
+    sget-object v6, Lme/b;->SHARE:Lme/b;
+
+    move-object v7, v2
+
+    const/16 v8, 0x0
+
+    const/16 v9, 0x0
+
+    const/16 v10, 0x0
+
+    const/4 v11, 0x0
+
+    const/16 v12, 0x0
+
+    const/16 v13, 0x0
+
+    const/16 v14, 0x3f0
+
+    invoke-direct/range {v4 .. v14}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
+
+    move-object v11, v15
+
+    move-object v12, v0
+
+    filled-new-array {v4, v12}, [Lve/w4;"""
 
 
 def main() -> None:
@@ -93,6 +187,14 @@ def main() -> None:
         raise SystemExit(f"usage: {sys.argv[0]} <apktool-cocoon-dir>")
     path = Path(sys.argv[1]) / "smali_classes3/ke/ff.smali"
     text = path.read_text(encoding="utf-8")
+
+    for wrong in (BATCH_WRONG, BATCH_WRONG2):
+        if wrong in text:
+            text = text.replace(wrong, BATCH_FIXED, 1)
+            path.write_text(text)
+            print("Fixed Picnic batch Froglog w4 registers (ke/ff.smali)")
+            return
+
     if MARKER in text:
         print("Picnic batch Froglog already patched")
         return

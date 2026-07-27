@@ -36,13 +36,19 @@ rm -rf "$TMP_DEX" "$TMP_SMALI"
 mkdir -p "$TMP_DEX"
 unzip -q -j "$INJECTOR_APK" "classes*.dex" -d "$TMP_DEX"
 for dex in "$TMP_DEX"/*.dex; do
-  java -jar "$BAKSMALI_JAR" d "$dex" -o "$TMP_SMALI" 2>/dev/null || true
+  java -jar "$BAKSMALI_JAR" d "$dex" -o "$TMP_SMALI"
 done
-# If baksmali merged, ensure rip tree exists
 if [[ ! -d "$TMP_SMALI/rip/moth/cocoonshell/froglog" ]]; then
-  rm -rf "$TMP_SMALI"
-  java -jar "$BAKSMALI_JAR" d "$INJECTOR_APK" -o "$TMP_SMALI"
+  echo "froglog smali missing after baksmali" >&2
+  exit 1
 fi
+if [[ ! -f "$TMP_SMALI/kotlin/jvm/internal/Intrinsics.smali" ]]; then
+  echo "kotlin stdlib smali missing from injector (need Intrinsics)" >&2
+  exit 1
+fi
+
+FROGLOG_APK_VERSION="${FROGLOG_APK_VERSION:-1.0.8-alpha}"
+export FROGLOG_APK_VERSION
 
 echo "==> apktool decode Cocoon"
 rm -rf "$APKTOOL_DIR"
@@ -50,7 +56,16 @@ apktool d -f "$APK_IN" -o "$APKTOOL_DIR"
 
 TARGET_SMALI="${APKTOOL_DIR}/smali_classes6"
 mkdir -p "${TARGET_SMALI}/rip/moth/cocoonshell"
-echo "==> Copy froglog smali"
+# Cocoon ships R8-renamed kotlin (no kotlin.jvm.internal.Intrinsics); froglog bytecode needs stdlib + deps.
+FROGLOG_SMALI_DEPS=(kotlin kotlinx okhttp3 okio _COROUTINE)
+echo "==> Copy froglog smali + runtime deps (${FROGLOG_SMALI_DEPS[*]})"
+for pkg in "${FROGLOG_SMALI_DEPS[@]}"; do
+  if [[ -d "$TMP_SMALI/$pkg" ]]; then
+    cp -a "$TMP_SMALI/$pkg" "${TARGET_SMALI}/"
+  else
+    echo "warning: injector smali missing package $pkg" >&2
+  fi
+done
 cp -a "$TMP_SMALI/rip/moth/cocoonshell/froglog" "${TARGET_SMALI}/rip/moth/cocoonshell/"
 
 python3 "${ROOT}/scripts/patch-apk-smali.py" "$APKTOOL_DIR"
@@ -59,6 +74,8 @@ python3 "${ROOT}/scripts/patch-apk-picnic-froglog.py" "$APKTOOL_DIR"
 python3 "${ROOT}/scripts/patch-apk-picnic-batch-froglog.py" "$APKTOOL_DIR"
 python3 "${ROOT}/scripts/patch-apk-logpod-froglog.py" "$APKTOOL_DIR"
 python3 "${ROOT}/scripts/patch-apk-game-froglog.py" "$APKTOOL_DIR"
+
+python3 "${ROOT}/scripts/verify-froglog-apk.py" "$APKTOOL_DIR"
 
 echo "==> Merge manifest entries"
 python3 "${ROOT}/scripts/patch-apk-manifest.py" "$APKTOOL_DIR"
@@ -90,6 +107,13 @@ if [[ -x "$ZIPALIGN" && -x "$APKSIGNER" ]]; then
     --out "$SIGNED_APK" "$ALIGNED_APK"
   rm -f "$ALIGNED_APK"
   echo "Signed APK: $SIGNED_APK"
+  OUT_VERSION="${ROOT}/android/dist/cocoon-froglog-${FROGLOG_APK_VERSION}.apk"
+  cp -f "$SIGNED_APK" "$OUT_VERSION"
+  echo "Versioned copy: $OUT_VERSION"
+  python3 "${ROOT}/scripts/verify-froglog-apk.py" "$APKTOOL_DIR"
+  python3 "${ROOT}/scripts/verify-froglog-built-apk.py" "$SIGNED_APK" "$APKTOOL_DIR"
+  chmod +x "${ROOT}/scripts/smoke-test-froglog-apk.sh"
+  "${ROOT}/scripts/smoke-test-froglog-apk.sh" "$SIGNED_APK" || true
 else
   echo "Unsigned APK: $OUT_APK (install zipalign + apksigner to sign)"
 fi
