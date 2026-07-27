@@ -18,7 +18,11 @@ chmod +x scripts/build-froglog-apk.sh
 ./scripts/build-froglog-apk.sh
 ```
 
-**Output:** `android/dist/cocoon-froglog.apk` (signed with a debug keystore generated on first run).
+**Output:** `android/dist/cocoon-froglog.apk` (signed with a debug keystore generated on first run). Application id: `rip.moth.cocoonshell.froglog` (installs beside stock Cocoon).
+
+## GitHub Releases (alpha)
+
+Published APKs use tags and filenames **`cocoon-froglog-<version>-alpha`** (pre-release). Upload `android/dist/cocoon-froglog.apk` renamed to match, e.g. `cocoon-froglog-1.0.1-alpha.apk`.
 
 ## What the build does
 
@@ -28,7 +32,6 @@ chmod +x scripts/build-froglog-apk.sh
 4. Patches `pf/c0.smali` to call `FroglogCocoonHooks.onGameSessionEndedWithD0` after each saved session.
 5. Registers the Froglog Pod on the home Pods overlay and adds **Submit to Froglog** on Picnic screenshot detail (`ke/ff.smali`).
 6. Merges Froglog Pod activity + `FroglogInitProvider` into `AndroidManifest.xml`.
-7. Rebuilds and signs the APK.
 
 ## On device
 
