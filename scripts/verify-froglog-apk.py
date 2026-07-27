@@ -8,36 +8,42 @@ from pathlib import Path
 
 D0 = "smali_classes3/ke/d0.smali"
 
-BAD_A1_PATTERNS = (
-    "FroglogGameMenuAction",
-    "filled-new-array {v15, v0, v4}, [Lve/w4;",
-    "move-object/from16 v9, p0",
-    "invoke-direct {v3, v1, v9}, Lrip/moth/cocoonshell/froglog/game/FroglogGameMenuAction;",
-)
 
-
-def extract_a1(text: str) -> str:
-    m = re.search(r"\.method public static final A1\(.*?^\.end method", text, re.M | re.S)
+def extract_method(text: str, name: str, sig: str) -> str:
+    m = re.search(
+        rf"\.method public static final {name}\({re.escape(sig)}.*?^\.end method",
+        text,
+        re.M | re.S,
+    )
     if not m:
-        raise SystemExit(f"{D0}: method A1 not found")
+        raise SystemExit(f"{D0}: method {name}{sig} not found")
     return m.group(0)
 
 
 def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit(f"usage: {sys.argv[0]} <apktool-cocoon-dir>")
-    path = Path(sys.argv[1]) / D0
-    text = path.read_text(encoding="utf-8")
-    a1 = extract_a1(text)
-    for pat in BAD_A1_PATTERNS:
+    text = (Path(sys.argv[1]) / D0).read_text(encoding="utf-8")
+
+    a1 = extract_method(text, "A1", "Lwa/a;Lz0/e0;I)V")
+    for pat in (
+        "FroglogGameMenuAction",
+        "filled-new-array {v15, v0, v4}, [Lve/w4;",
+        "move-object/from16 v9, p0",
+    ):
         if pat in a1:
-            raise SystemExit(
-                f"ke/d0.A1 still contains bad Froglog smali ({pat!r}). "
-                "This causes VerifyError (v9 wa.a vs String). Re-decode Cocoon and rebuild."
-            )
-    if "filled-new-array {v13, v0, v4}" in text and ":froglog_game_remembered" in text:
-        print("OK: Froglog game menu patch present in O0 only")
-    print("OK: ke/d0.A1 clean")
+            raise SystemExit(f"ke/d0.A1 contains bad Froglog smali: {pat!r}")
+
+    if "FroglogGameMenuAction" in text:
+        j = extract_method(text, "j", "Lwa/a;Ljava/lang/String;Lz0/e0;I)V")
+        if "FroglogGameMenuAction" not in j:
+            raise SystemExit("FroglogGameMenuAction outside ke/d0.j")
+        if "move-object/from16 v6, p0" in j:
+            raise SystemExit("ke/d0.j game menu must use p1 (String) for title, not p0 (wa.a)")
+        if "move-object/from16 v6, p1" not in j:
+            raise SystemExit("ke/d0.j game menu missing move-object/from16 v6, p1")
+
+    print("OK: ke/d0 smali checks passed")
 
 
 if __name__ == "__main__":

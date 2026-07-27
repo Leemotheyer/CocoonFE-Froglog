@@ -47,7 +47,7 @@ if [[ ! -f "$TMP_SMALI/kotlin/jvm/internal/Intrinsics.smali" ]]; then
   exit 1
 fi
 
-FROGLOG_APK_VERSION="${FROGLOG_APK_VERSION:-1.0.7-alpha}"
+FROGLOG_APK_VERSION="${FROGLOG_APK_VERSION:-1.0.8-alpha}"
 export FROGLOG_APK_VERSION
 
 echo "==> apktool decode Cocoon"

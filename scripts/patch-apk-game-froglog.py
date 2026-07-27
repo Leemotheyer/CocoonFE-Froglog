@@ -90,13 +90,14 @@ O0_ANCHOR = """    .line 1593
     .line 1597
     filled-new-array {v13, v0}, [Lve/w4;"""
 
-# v11 = composer; p0 = game title. Use v0–v15 only (invoke-virtual / filled-new-array limits).
-O0_FROGLOG_BLOCK = """    .line 1593
+# Game start menu composable is ke/d0.j(Lwa/a; String; Lz0/e0; I) — title is p1, not p0.
+MENU_ANCHOR = O0_ANCHOR  # same smali anchor; only appears in j in Cocoon beta-3.0
+MENU_FROGLOG_BLOCK = """    .line 1593
     .line 1594
     .line 1595
     move-object/from16 v0, v55
 
-    move-object/from16 v6, p0
+    move-object/from16 v6, p1
 
     sget-object v1, Landroidx/compose/ui/platform/AndroidCompositionLocals_androidKt;->b:Lz0/m2;
 
@@ -172,7 +173,15 @@ O0_FROGLOG_BLOCK = """    .line 1593
     .line 1597
     filled-new-array {v13, v0, v4}, [Lve/w4;"""
 
-O0_MARKER = "filled-new-array {v13, v0, v4}, [Lve/w4;"
+MENU_MARKER = "filled-new-array {v13, v0, v4}, [Lve/w4;"
+WRONG_TITLE_LOAD = "    move-object/from16 v6, p0"
+CORRECT_TITLE_LOAD = "    move-object/from16 v6, p1"
+
+
+def fix_wrong_title_register(text: str) -> tuple[str, bool]:
+    if WRONG_TITLE_LOAD not in text or MARKER not in text:
+        return text, False
+    return text.replace(WRONG_TITLE_LOAD, CORRECT_TITLE_LOAD, 1), True
 
 
 def revert_a1_wrong_patch(text: str) -> tuple[str, bool]:
@@ -191,11 +200,17 @@ def main() -> None:
     if reverted:
         print("Reverted erroneous Froglog patch from ke/d0.A1")
 
-    if O0_MARKER in text:
+    text, fixed_title = fix_wrong_title_register(text)
+    if fixed_title:
+        path.write_text(text)
+        print("Fixed game menu Froglog title register (p1 String, not p0 wa.a)")
+        return
+
+    if MENU_MARKER in text:
         if reverted:
             path.write_text(text)
         else:
-            print("Game menu Froglog action already patched (O0)")
+            print("Game menu Froglog action already patched (ke/d0.j)")
         return
 
     bad_o0_markers = (
@@ -203,20 +218,20 @@ def main() -> None:
         "new-instance v70, Lve/w4;",
         "filled-new-array {v13, v0, v70}, [Lve/w4;",
     )
-    if any(m in text for m in bad_o0_markers) and O0_ANCHOR not in text:
-        raise SystemExit("ke/d0 has broken O0 Froglog patch; re-run build on clean decode")
+    if any(m in text for m in bad_o0_markers) and MENU_ANCHOR not in text:
+        raise SystemExit("ke/d0 has broken Froglog patch; re-run build on clean decode")
 
-    if MARKER in text and O0_MARKER not in text:
+    if MARKER in text and MENU_MARKER not in text:
         raise SystemExit(
-            "ke/d0 has FroglogGameMenuAction but O0 menu patch missing; manual fix needed"
+            "ke/d0 has FroglogGameMenuAction but game menu patch incomplete; manual fix needed"
         )
 
-    if O0_ANCHOR not in text:
-        raise SystemExit("ke/d0 O0 game menu anchor not found")
+    if MENU_ANCHOR not in text:
+        raise SystemExit("ke/d0 game menu anchor not found")
 
-    text = text.replace(O0_ANCHOR, O0_FROGLOG_BLOCK, 1)
+    text = text.replace(MENU_ANCHOR, MENU_FROGLOG_BLOCK, 1)
     path.write_text(text)
-    print("Patched", path, "(O0 game menu)")
+    print("Patched", path, "(ke/d0.j game menu)")
 
 
 if __name__ == "__main__":
