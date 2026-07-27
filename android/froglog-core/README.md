@@ -1,30 +1,61 @@
-# froglog-core (Gradle module)
+# froglog-core
 
-Shared Froglog integration for **one Cocoon APK**:
+Android library module: Froglog API, auth, sync queue, `FroglogBridge`, and **Froglog Pod** UI.
 
-- JWT auth, Ktor/Retrofit client (`https://api.froglog.co.uk/api`)
-- Session queue + `WorkManager`
-- `FroglogBridge` for Log Pod, Picnic Pod, and others
-- ViewModels / Compose for **Froglog Pod**
+## Build (library only)
 
-Create this module **after** importing Cocoon Shell into `android/`.
-
-```text
-android/froglog-core/
-  src/main/java/.../froglog/
-    api/
-    auth/
-    bridge/
-    data/
-    sync/
-    pod/
+```bash
+cd android
+cp build.gradle.froglog build.gradle
+cp settings.gradle.froglog settings.gradle
+cp gradle.properties.froglog gradle.properties
+# After APK import, :app is present but may not compile; froglog-core should:
+./gradlew :froglog-core:assembleRelease
 ```
 
-Wire-up:
+Requires Android SDK (API 34) and JDK 17.
 
-1. `settings.gradle.kts` → `include(":froglog-core")`
-2. `app` → `implementation(project(":froglog-core"))`
-3. Register `FroglogPodActivity` per [docs/froglog/FROGLOG_POD.md](../../docs/froglog/FROGLOG_POD.md)
-4. Hook `GameSession` insert → `FroglogBridge.enqueueSession`
+## Cocoon integration
 
-See [docs/froglog/INTEGRATION_PLAN.md](../../docs/froglog/INTEGRATION_PLAN.md).
+| Piece | Role |
+|--------|------|
+| `FroglogPodActivity` | Pod UI (login, sync, Wi‑Fi only) |
+| `FroglogCocoonHooks` | Call from Cocoon when a `GameSession` ends |
+| `FroglogInitProvider` | Loads bridge at process start |
+| `scripts/patch-cocoon-manifest-froglog.sh` | Adds Pod to Cocoon manifest with `Theme.Cocoon` |
+
+### Session hook (Java, from decompiled Cocoon)
+
+```java
+FroglogCocoonHooks.onGameSessionEnded(
+    context,
+    session.getId(),
+    session.getGameId(),
+    session.getGameName(),
+    session.getPlatformId(),
+    session.getDate(),
+    session.getDurationMinutes(),
+    session.getEmulatorPackage()
+);
+```
+
+Search decompiled tree for `GameSessionDao` insert / session end callback.
+
+### Launch Pod (debug)
+
+```bash
+adb shell am start -n rip.moth.cocoonshell/rip.moth.cocoonshell.froglog.pod.FroglogPodActivity
+```
+
+Home screen Pod shortcut: patch pod registry (see `kd/s.java` near `LogPodActivity`).
+
+## Package layout
+
+```text
+froglog/api/          Froglog REST client
+froglog/auth/         Encrypted JWT storage
+froglog/bridge/       FroglogBridge + repository
+froglog/data/         Offline queue + game links
+froglog/sync/         WorkManager worker
+froglog/pod/          FroglogPodActivity
+```

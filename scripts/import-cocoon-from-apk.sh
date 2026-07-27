@@ -154,3 +154,14 @@ echo ""
 echo "This is decompiled output — expect jadx errors and a non-buildable app module"
 echo "until dependencies are restored. New Froglog code belongs in froglog-core."
 echo "See android/DECOMPILED_BASELINE.md"
+
+# Apply Froglog Gradle templates and manifest hook for Cocoon theme
+if [[ -f "${ROOT}/android/build.gradle.froglog" ]]; then
+  cp "${ROOT}/android/build.gradle.froglog" "${ANDROID_DIR}/build.gradle"
+fi
+if [[ -f "${ROOT}/android/gradle.properties.froglog" ]]; then
+  cp "${ROOT}/android/gradle.properties.froglog" "${ANDROID_DIR}/gradle.properties"
+fi
+if [[ -x "${ROOT}/scripts/patch-cocoon-manifest-froglog.sh" ]]; then
+  "${ROOT}/scripts/patch-cocoon-manifest-froglog.sh" || true
+fi

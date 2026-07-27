@@ -149,9 +149,12 @@ SOURCE_MODE=apk TAG=beta-3.0 ./scripts/import-cocoon-from-apk.sh
 
 Decompiles [beta-3.0 APK](https://github.com/inssekt/CocoonFE/releases/download/beta-3.0/cocoon-3.apk) to `android/` (see [android/DECOMPILED_BASELINE.md](../../android/DECOMPILED_BASELINE.md)). Implement `froglog-core` and register Froglog Pod.
 
-### Phase 2 — `froglog-core` + API client
+### Phase 2 — `froglog-core` + API client (in progress)
 
-Implement auth, games, sessions, search per [API_CONTRACT.md](./API_CONTRACT.md). Unit tests for mapper and `sync_ref`.
+- [x] Module scaffold, OkHttp API, JWT auth, queue, WorkManager
+- [x] `FroglogPodActivity`, `FroglogBridge`, `FroglogCocoonHooks`
+- [ ] Wire `GameSession` insert in decompiled Cocoon
+- [ ] Home screen Pod entry (patch `kd/s.java` or equivalent)
 
 ### Phase 3 — Bridge + session hook
 
