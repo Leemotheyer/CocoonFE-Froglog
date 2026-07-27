@@ -20,7 +20,7 @@ HOOK = """
     invoke-static {v1, v10, v5, v6, v11}, Lrip/moth/cocoonshell/froglog/FroglogCocoonHooks;->onGameSessionEndedWithD0(Landroid/content/Context;Ljava/lang/Object;JLjava/lang/String;)V
 
     move-wide v1, v5
-"""
+""".strip()
 
 MARKER = "FroglogCocoonHooks;->onGameSessionEndedWithD0"
 WRONG_D0_LOAD = "    iget-object v10, v0, Lpf/y;->a:Lpf/d0;"
@@ -50,9 +50,9 @@ def main() -> None:
         if end == -1:
             raise SystemExit("Could not find move-result-wide after longValue")
         end = text.find("\n", end) + 1
-        text = text[:idx] + HOOK.strip() + "\n\n" + text[end:]
+        text = text[:idx] + HOOK + "\n\n" + text[end:]
     else:
-        text = text.replace(needle, HOOK.strip() + "\n\n", 1)
+        text = text.replace(needle, HOOK + "\n\n", 1)
     path.write_text(text)
     print("Patched", path)
 
