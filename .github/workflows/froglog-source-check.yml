@@ -1,0 +1,53 @@
+name: Froglog source import check
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: CocoonFE tag (e.g. beta-3.0)
+        required: true
+        default: beta-3.0
+      mode:
+        description: Import mode (apk recommended)
+        required: true
+        default: apk
+        type: choice
+        options:
+          - apk
+          - auto
+  schedule:
+    - cron: '0 12 * * 1'
+
+jobs:
+  import-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jadx
+        run: |
+          JADX_VER=1.5.1
+          curl -fsSL -o /tmp/jadx.zip "https://github.com/skylot/jadx/releases/download/v${JADX_VER}/jadx-${JADX_VER}.zip"
+          sudo unzip -q -o /tmp/jadx.zip -d /opt/jadx
+          echo "JADX_BIN=/opt/jadx/bin/jadx" >> "$GITHUB_ENV"
+
+      - name: Import from APK or auto
+        env:
+          TAG: ${{ github.event.inputs.tag || 'beta-3.0' }}
+          SOURCE_MODE: ${{ github.event.inputs.mode || 'apk' }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/*.sh
+          ./scripts/import-cocoon-source-from-release.sh
+          test -f android/settings.gradle
+          test -f android/app/src/main/AndroidManifest.xml
+          cat android/SOURCE_VERSION
+
+      - name: Upload decompiled tree artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cocoon-android-decompiled-${{ github.event.inputs.tag || 'beta-3.0' }}
+          path: |
+            android/
+            !android/archives/**
+          retention-days: 7

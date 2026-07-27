@@ -1,0 +1,22 @@
+# Decompiled / generated Android tree (local import)
+android/app/
+android/build.gradle
+android/settings.gradle
+android/gradle/
+android/gradlew
+android/gradlew.bat
+android/gradle.properties
+android/SOURCE_VERSION
+
+android/.gradle/
+android/**/build/
+android/apktool-cocoon/
+android/archives/
+android/dist/
+!android/dist/.gitkeep
+
+# Keep Froglog scaffold in git
+!android/froglog-core/
+!android/README.md
+!android/DECOMPILED_BASELINE.md
+android-sdk/

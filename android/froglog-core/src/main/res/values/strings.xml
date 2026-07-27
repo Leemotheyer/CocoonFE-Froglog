@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="froglog_pod_title">Froglog Pod</string>
+    <string name="froglog_pod_subtitle">Pod</string>
+    <string name="froglog_sign_in">Sign in to Froglog</string>
+    <string name="froglog_username">Username</string>
+    <string name="froglog_password">Password</string>
+    <string name="froglog_login">Log in</string>
+    <string name="froglog_register">Create account</string>
+    <string name="froglog_sync_now">Sync now</string>
+    <string name="froglog_sign_out">Sign out</string>
+    <string name="froglog_status_signed_out">Not signed in</string>
+    <string name="froglog_status_signed_in">Signed in as %1$s</string>
+    <string name="froglog_pending_queue">Pending uploads: %1$d</string>
+    <string name="froglog_pending_queue_detail">Sessions: %1$d · Picnic screenshots: %2$d</string>
+    <string name="froglog_sign_in_required">Sign in to Froglog first</string>
+    <string name="picnic_froglog_queued">Screenshot queued for Froglog</string>
+    <string name="froglog_toast_signed_in">Signed in</string>
+    <string name="froglog_toast_registered">Account created</string>
+    <string name="froglog_toast_signed_out">Signed out</string>
+    <string name="froglog_toast_synced">Uploaded %1$d item(s)</string>
+    <string name="froglog_wifi_only">Sync on Wi‑Fi only</string>
+    <string name="froglog_error_generic">Something went wrong. Try again.</string>
+</resources>

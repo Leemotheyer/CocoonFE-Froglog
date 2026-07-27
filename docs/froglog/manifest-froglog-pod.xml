@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Insert inside <application> after Picnic Pod (optional Cocoon theme). -->
+<activity
+    android:name="rip.moth.cocoonshell.froglog.pod.FroglogPodActivity"
+    android:exported="true"
+    android:label="Froglog Pod"
+    android:theme="@style/Theme.Cocoon"
+    android:configChanges="screenSize|screenLayout|orientation|keyboardHidden" />

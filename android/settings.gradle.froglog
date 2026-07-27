@@ -1,0 +1,3 @@
+include ':froglog-core'
+include ':froglog-injector'
+rootProject.name = 'CocoonFroglog'

@@ -1,0 +1,43 @@
+name: Build froglog-core
+
+on:
+  push:
+    paths:
+      - 'android/froglog-core/**'
+      - 'android/build.gradle.froglog'
+      - '.github/workflows/build-froglog-core.yml'
+  pull_request:
+    paths:
+      - 'android/froglog-core/**'
+  workflow_dispatch:
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Prepare Gradle project
+        run: |
+          cd android
+          cp build.gradle.froglog build.gradle
+          printf '%s\n' "include ':froglog-core'" "rootProject.name = 'CocoonFroglog'" > settings.gradle
+          cp gradle.properties.froglog gradle.properties
+
+      - name: Gradle wrapper
+        run: |
+          cd android
+          gradle wrapper --gradle-version 8.2
+
+      - name: Assemble froglog-core
+        run: |
+          cd android
+          ./gradlew :froglog-core:assembleRelease --stacktrace

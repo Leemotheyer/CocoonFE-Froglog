@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application>
+        <activity
+            android:name=".pod.FroglogPodActivity"
+            android:exported="true"
+            android:label="@string/froglog_pod_title"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <provider
+            android:name=".FroglogInitProvider"
+            android:authorities="${applicationId}.froglog-init"
+            android:exported="false"
+            android:initOrder="100" />
+    </application>
+</manifest>
