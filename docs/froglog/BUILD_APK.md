@@ -27,7 +27,7 @@ Published APKs use tags and filenames **`cocoon-froglog-<version>-alpha`** (pre-
 ## What the build does
 
 1. Assembles `froglog-injector` (thin app that packages `froglog-core`).
-2. Baksmalis injector DEX and copies `rip/moth/cocoonshell/froglog/**` into `smali_classes6`.
+2. Baksmalis all injector DEX files and copies **`rip/moth/cocoonshell/froglog/**` plus runtime deps** (`kotlin`, `kotlinx`, `okhttp3`, `okio`, `_COROUTINE`) into `smali_classes6`. Cocoon’s own Kotlin stdlib is R8-renamed and does not expose `kotlin.jvm.internal.Intrinsics`, which froglog bytecode requires.
 3. Decodes Cocoon with apktool.
 4. Patches `pf/c0.smali` to call `FroglogCocoonHooks.onGameSessionEndedWithD0` after each saved session.
 5. Registers the Froglog Pod on the home Pods overlay and adds **Submit to Froglog** on Picnic screenshot detail (`ke/ff.smali`).

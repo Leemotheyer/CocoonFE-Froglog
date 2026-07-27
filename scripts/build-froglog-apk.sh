@@ -36,12 +36,15 @@ rm -rf "$TMP_DEX" "$TMP_SMALI"
 mkdir -p "$TMP_DEX"
 unzip -q -j "$INJECTOR_APK" "classes*.dex" -d "$TMP_DEX"
 for dex in "$TMP_DEX"/*.dex; do
-  java -jar "$BAKSMALI_JAR" d "$dex" -o "$TMP_SMALI" 2>/dev/null || true
+  java -jar "$BAKSMALI_JAR" d "$dex" -o "$TMP_SMALI"
 done
-# If baksmali merged, ensure rip tree exists
 if [[ ! -d "$TMP_SMALI/rip/moth/cocoonshell/froglog" ]]; then
-  rm -rf "$TMP_SMALI"
-  java -jar "$BAKSMALI_JAR" d "$INJECTOR_APK" -o "$TMP_SMALI"
+  echo "froglog smali missing after baksmali" >&2
+  exit 1
+fi
+if [[ ! -f "$TMP_SMALI/kotlin/jvm/internal/Intrinsics.smali" ]]; then
+  echo "kotlin stdlib smali missing from injector (need Intrinsics)" >&2
+  exit 1
 fi
 
 echo "==> apktool decode Cocoon"
@@ -50,7 +53,16 @@ apktool d -f "$APK_IN" -o "$APKTOOL_DIR"
 
 TARGET_SMALI="${APKTOOL_DIR}/smali_classes6"
 mkdir -p "${TARGET_SMALI}/rip/moth/cocoonshell"
-echo "==> Copy froglog smali"
+# Cocoon ships R8-renamed kotlin (no kotlin.jvm.internal.Intrinsics); froglog bytecode needs stdlib + deps.
+FROGLOG_SMALI_DEPS=(kotlin kotlinx okhttp3 okio _COROUTINE)
+echo "==> Copy froglog smali + runtime deps (${FROGLOG_SMALI_DEPS[*]})"
+for pkg in "${FROGLOG_SMALI_DEPS[@]}"; do
+  if [[ -d "$TMP_SMALI/$pkg" ]]; then
+    cp -a "$TMP_SMALI/$pkg" "${TARGET_SMALI}/"
+  else
+    echo "warning: injector smali missing package $pkg" >&2
+  fi
+done
 cp -a "$TMP_SMALI/rip/moth/cocoonshell/froglog" "${TARGET_SMALI}/rip/moth/cocoonshell/"
 
 python3 "${ROOT}/scripts/patch-apk-smali.py" "$APKTOOL_DIR"
