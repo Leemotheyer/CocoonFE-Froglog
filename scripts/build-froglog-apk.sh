@@ -47,7 +47,7 @@ if [[ ! -f "$TMP_SMALI/kotlin/jvm/internal/Intrinsics.smali" ]]; then
   exit 1
 fi
 
-FROGLOG_APK_VERSION="${FROGLOG_APK_VERSION:-1.0.8-alpha}"
+FROGLOG_APK_VERSION="${FROGLOG_APK_VERSION:-1.0.9-alpha}"
 export FROGLOG_APK_VERSION
 
 echo "==> apktool decode Cocoon"
@@ -73,7 +73,12 @@ python3 "${ROOT}/scripts/patch-apk-pods.py" "$APKTOOL_DIR"
 python3 "${ROOT}/scripts/patch-apk-picnic-froglog.py" "$APKTOOL_DIR"
 python3 "${ROOT}/scripts/patch-apk-picnic-batch-froglog.py" "$APKTOOL_DIR"
 python3 "${ROOT}/scripts/patch-apk-logpod-froglog.py" "$APKTOOL_DIR"
-python3 "${ROOT}/scripts/patch-apk-game-froglog.py" "$APKTOOL_DIR"
+if [[ "${FROGLOG_GAME_MENU_PATCH:-0}" == "1" ]]; then
+  echo "==> Game menu smali patch (optional; set FROGLOG_GAME_MENU_PATCH=1)"
+  python3 "${ROOT}/scripts/patch-apk-game-froglog.py" "$APKTOOL_DIR"
+else
+  echo "==> Skipping game menu smali patch (FROGLOG_GAME_MENU_PATCH=0, default)"
+fi
 
 python3 "${ROOT}/scripts/verify-froglog-apk.py" "$APKTOOL_DIR"
 

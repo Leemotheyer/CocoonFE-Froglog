@@ -81,7 +81,11 @@ def patch_version_name(manifest: Path) -> None:
     if 'android:versionCode="999' not in text:
         text = re.sub(
             r'android:versionCode="\d+"',
+<<<<<<< HEAD
             'android:versionCode="999004"',
+=======
+            'android:versionCode="999005"',
+>>>>>>> origin/cursor/froglog-kotlin-deps-aff8
             text,
             count=1,
         )
