@@ -5,11 +5,11 @@ on:
   push:
     branches:
       - 'cursor/**'
+      - 'main'
     paths:
       - 'android/froglog-core/**'
-      - 'scripts/build-froglog-apk.sh'
-      - 'scripts/patch-apk-*.py'
-      - 'scripts/apk-extra-res/**'
+      - 'scripts/**'
+      - '.github/workflows/build-cocoon-froglog-apk.yml'
 
 jobs:
   build-apk:
@@ -40,8 +40,44 @@ jobs:
           chmod +x scripts/*.sh
           ./scripts/build-froglog-apk.sh
 
+      - name: Verify APK (smali baselines + dex)
+        run: |
+          python3 scripts/verify-froglog-built-apk.py android/dist/cocoon-froglog.apk android/apktool-cocoon
+
       - uses: actions/upload-artifact@v4
         with:
           name: cocoon-froglog-apk
-          path: android/dist/cocoon-froglog.apk
+          path: |
+            android/dist/cocoon-froglog.apk
+            android/dist/cocoon-froglog-*-alpha.apk
           retention-days: 14
+
+  smoke-emulator:
+    needs: build-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cocoon-froglog-apk
+          path: android/dist
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Emulator smoke test (ART VerifyError)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          profile: pixel_6
+          script: |
+            chmod +x scripts/smoke-test-froglog-apk.sh
+            export FROGLOG_SMOKE_REQUIRED=1
+            export FROGLOG_SMOKE_WAIT_SEC=30
+            ./scripts/smoke-test-froglog-apk.sh android/dist/cocoon-froglog.apk

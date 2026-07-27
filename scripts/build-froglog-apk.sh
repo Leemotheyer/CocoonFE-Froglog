@@ -111,6 +111,9 @@ if [[ -x "$ZIPALIGN" && -x "$APKSIGNER" ]]; then
   cp -f "$SIGNED_APK" "$OUT_VERSION"
   echo "Versioned copy: $OUT_VERSION"
   python3 "${ROOT}/scripts/verify-froglog-apk.py" "$APKTOOL_DIR"
+  python3 "${ROOT}/scripts/verify-froglog-built-apk.py" "$SIGNED_APK" "$APKTOOL_DIR"
+  chmod +x "${ROOT}/scripts/smoke-test-froglog-apk.sh"
+  "${ROOT}/scripts/smoke-test-froglog-apk.sh" "$SIGNED_APK" || true
 else
   echo "Unsigned APK: $OUT_APK (install zipalign + apksigner to sign)"
 fi

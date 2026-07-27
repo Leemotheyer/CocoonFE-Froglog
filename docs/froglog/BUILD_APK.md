@@ -34,6 +34,31 @@ Published APKs use tags and filenames **`cocoon-froglog-<version>-alpha`** (pre-
 6. Merges Froglog Pod activity + `FroglogInitProvider` into `AndroidManifest.xml`.
 7. Sets application id **`rip.moth.cocoonshell.froglog`** via **`renameManifestPackage`** in `apktool.yml` (keeps resource table on `rip.moth.cocoonshell` so the app launches), plus distinct provider authorities and launcher label **Cocoon (Froglog)**.
 8. Rebuilds with apktool, **zipalign -p 4** (required for `extractNativeLibs=false`), then signs with apksigner (v1+v2+v3).
+9. Runs **automated verification** (see below).
+
+## Automated tests (no manual logcat hunting)
+
+After every build:
+
+```bash
+./scripts/run-froglog-apk-tests.sh
+```
+
+This runs:
+
+- **`verify-froglog-apk.py`** — smali rules (e.g. no Froglog hook inside `ke/d0.A1`, game title uses `p1` in `ke/d0.j`).
+- **`verify-froglog-built-apk.py`** — `ke/d0.A1` must match stock SHA256 in `scripts/baselines/ke-d0-A1.sha256`, Kotlin `Intrinsics` present, dex sanity checks.
+- **`smoke-test-froglog-apk.sh`** — if `adb` + device/emulator connected: install, launch `MainActivity`, fail on `VerifyError` / `FATAL EXCEPTION` in logcat (skipped otherwise).
+
+CI (GitHub Actions) runs verify on every push; **workflow_dispatch** also runs an **API 30 emulator** smoke test.
+
+```bash
+# Local smoke test (physical device or emulator running)
+export FROGLOG_SMOKE_REQUIRED=1   # optional: fail instead of skip when no adb
+./scripts/smoke-test-froglog-apk.sh android/dist/cocoon-froglog.apk
+```
+
+**Note:** Emulator smoke catches startup / early composition crashes. It does not open every game menu; smali baselines + register checks are what guard the `ke.d0.j` patch.
 
 ## On device
 
