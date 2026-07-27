@@ -7,7 +7,7 @@ Fork of [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE): **one Cocoon ap
 | Area | State |
 |------|--------|
 | Platform catalog (`platforms/`) | Tracked with upstream |
-| Android sources (`android/`) | Import via `scripts/import-cocoon-source-from-release.sh` when release ships sources |
+| Android sources (`android/`) | Import via `scripts/import-cocoon-source-from-release.sh` ([tag zip](https://github.com/inssekt/CocoonFE/archive/refs/tags/beta-3.0.zip)) |
 | Froglog API | Documented from [wiki.froglog.co.uk/Api](https://wiki.froglog.co.uk/Api) |
 | Froglog Pod + sync code | After source import → `android/froglog-core` |
 
@@ -32,7 +32,8 @@ Fork of [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE): **one Cocoon ap
 ```bash
 git remote add upstream https://github.com/inssekt/CocoonFE.git  # if needed
 chmod +x scripts/*.sh
-TAG=beta-3.0 ./scripts/import-cocoon-source-from-release.sh   # when source zip exists
+TAG=beta-3.0 ./scripts/import-cocoon-source-from-release.sh
+# Uses https://github.com/inssekt/CocoonFE/archive/refs/tags/beta-3.0.zip by default
 # Open android/ in Android Studio, add :froglog-core, register Froglog Pod
 ```
 

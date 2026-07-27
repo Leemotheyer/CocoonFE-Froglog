@@ -143,7 +143,7 @@ Docs, import script, upstream remote.
 
 ### Phase 1 — Import Cocoon sources
 
-Run `scripts/import-cocoon-source-from-release.sh` when release archive exists.
+Run `scripts/import-cocoon-source-from-release.sh` (downloads `https://github.com/inssekt/CocoonFE/archive/refs/tags/<tag>.zip`).
 
 ### Phase 2 — `froglog-core` + API client
 
@@ -170,7 +170,7 @@ When API available, implement screenshot path through bridge.
 ## Upstream
 
 - Platforms: `scripts/sync-upstream-platforms.sh` from `inssekt/CocoonFE`.
-- Android: release source archive; fork-specific code stays in `froglog-core` + thin wiring in `app` to reduce merge pain.
+- Android: [tag archive zip](https://github.com/inssekt/CocoonFE/archive/refs/tags/beta-3.0.zip) via `scripts/import-cocoon-source-from-release.sh` (plus optional release asset); fork code in `froglog-core` + thin `app` wiring.
 
 ## Decisions (locked)
 

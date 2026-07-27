@@ -4,36 +4,31 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: CocoonFE release tag
+        description: CocoonFE tag (e.g. beta-3.0)
         required: true
         default: beta-3.0
   schedule:
-    # Weekly: detect when upstream adds a source archive to releases
     - cron: '0 12 * * 1'
 
 jobs:
-  probe-release:
+  probe-tag-archive:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install GitHub CLI
-        run: type gh
-
-      - name: List release assets
+      - name: Try import from tag archive
         env:
           TAG: ${{ github.event.inputs.tag || 'beta-3.0' }}
+          SOURCE_MODE: auto
         run: |
           set -euo pipefail
-          echo "Release assets for tag ${TAG}:"
-          gh api "repos/inssekt/CocoonFE/releases/tags/${TAG}" \
-            --jq '.assets[] | "\(.name) (\(.size) bytes)"'
+          echo "Tag archive: https://github.com/inssekt/CocoonFE/archive/refs/tags/${TAG}.zip"
           if ./scripts/import-cocoon-source-from-release.sh; then
             echo "Source import succeeded."
           else
             code=$?
-            if [[ "$code" -eq 2 ]]; then
-              echo "::notice::No source archive on ${TAG} yet (APK-only release is expected today)."
+            if [[ "$code" -eq 4 ]]; then
+              echo "::notice::Tag archive has no Gradle project yet (platforms-only snapshot or Android not in repo at this tag)."
               exit 0
             fi
             exit "$code"

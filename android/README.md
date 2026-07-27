@@ -1,49 +1,54 @@
 # Cocoon Shell (Android) sources
 
-This directory will contain the **Cocoon Shell** Gradle project imported from [inssekt/CocoonFE releases](https://github.com/inssekt/CocoonFE/releases).
+This directory holds the **Cocoon Shell** Gradle project for Froglog integration.
 
-The public `main` branch of upstream currently ships **platform JSON** only; the Android app is distributed as an APK. When upstream attaches a **source archive** to a release, import it here before implementing Froglog sync.
+## Canonical source archive (per tag)
 
-## Import sources
+GitHub serves a zip of the repository at each tag:
+
+**[https://github.com/inssekt/CocoonFE/archive/refs/tags/beta-3.0.zip](https://github.com/inssekt/CocoonFE/archive/refs/tags/beta-3.0.zip)**
+
+Pattern: `https://github.com/inssekt/CocoonFE/archive/refs/tags/<TAG>.zip`
+
+The import script downloads that URL by default (`SOURCE_MODE=auto` or `tag`).
+
+If upstream also attaches a separate source zip to a [GitHub Release](https://github.com/inssekt/CocoonFE/releases), the script falls back to that when the tag tree has no Gradle project.
+
+## Import
 
 From the repository root:
 
 ```bash
-# Latest beta tag (override with TAG=beta-3.0)
+chmod +x scripts/import-cocoon-source-from-release.sh
+
+# Default: TAG=beta-3.0, tries tag zip then release assets
 ./scripts/import-cocoon-source-from-release.sh
 
-# Specific tag
+# Explicit tag
 TAG=beta-3.0 ./scripts/import-cocoon-source-from-release.sh
+
+# Tag zip only
+SOURCE_MODE=tag TAG=beta-3.0 ./scripts/import-cocoon-source-from-release.sh
+
+# Release asset only (if present)
+SOURCE_MODE=release TAG=beta-3.0 ./scripts/import-cocoon-source-from-release.sh
 ```
 
-The script will:
+On success, `android/SOURCE_VERSION` records the tag and import source.
 
-1. List assets on the GitHub release.
-2. Download the first asset that looks like source (`source`, `src`, `.zip` excluding `.apk`).
-3. Extract into `android/` (see script for layout normalization).
-4. Write `android/SOURCE_VERSION` with the tag name.
-
-### If no source asset exists yet
-
-As of **beta-3.0**, the release only publishes `cocoon-3.apk`. The APK does **not** include Kotlin sources. Track [CocoonFE releases](https://github.com/inssekt/CocoonFE/releases) for a source bundle, or obtain sources directly from the maintainer.
-
-Do **not** commit decompiled code into this fork; wait for the official archive.
+If import fails with exit code `4`, the archive did not contain `settings.gradle(.kts)` — the tag snapshot may still be platforms-only until Android sources are added to the repo at that tag.
 
 ## After import
 
-1. Open `android/` in Android Studio (Giraffe or newer recommended).
-2. Sync Gradle and confirm `:app` assembles.
-3. Add the **`froglog-core`** module per [docs/froglog/INTEGRATION_PLAN.md](../docs/froglog/INTEGRATION_PLAN.md):
-   - Create `android/froglog-core/`
-   - `include(":froglog-core")` in `settings.gradle.kts`
-   - `implementation(project(":froglog-core"))` in `app`
-4. Register **Froglog Pod** and hook `GameSession` / `FroglogBridge` per [docs/froglog/FROGLOG_POD.md](../docs/froglog/FROGLOG_POD.md).
+1. Open `android/` in Android Studio.
+2. Sync Gradle and confirm `:app` builds.
+3. Add **`froglog-core`** per [docs/froglog/INTEGRATION_PLAN.md](../docs/froglog/INTEGRATION_PLAN.md).
+4. Register **Froglog Pod** per [docs/froglog/FROGLOG_POD.md](../docs/froglog/FROGLOG_POD.md).
 
 ## Version pin
 
 | Field | Value |
 |--------|--------|
-| Target Cocoon release | `beta-3.0` (Cocoon 3 — Metamorphosis) |
-| Imported | _not yet — run import script when source asset is available_ |
-
-See `SOURCE_VERSION` after a successful import.
+| Target tag | `beta-3.0` (Cocoon 3 — Metamorphosis) |
+| Tag archive | [beta-3.0.zip](https://github.com/inssekt/CocoonFE/archive/refs/tags/beta-3.0.zip) |
+| Imported | Run script; see `SOURCE_VERSION` |
