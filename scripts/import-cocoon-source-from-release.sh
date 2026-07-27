@@ -10,7 +10,7 @@ set -euo pipefail
 
 REPO="${REPO:-inssekt/CocoonFE}"
 TAG="${TAG:-beta-3.0}"
-# tag | release | auto
+# tag | release | apk | auto
 SOURCE_MODE="${SOURCE_MODE:-auto}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ANDROID_DIR="${ROOT}/android"
@@ -127,15 +127,19 @@ try_tag_archive() {
 }
 
 imported=1
-if [[ "$SOURCE_MODE" == "tag" ]]; then
+if [[ "$SOURCE_MODE" == "apk" ]]; then
+  "${ROOT}/scripts/import-cocoon-from-apk.sh" && imported=0
+elif [[ "$SOURCE_MODE" == "tag" ]]; then
   try_tag_archive && imported=0
 elif [[ "$SOURCE_MODE" == "release" ]]; then
   try_release_asset_archive && imported=0
 else
-  # auto: tag archive first (canonical link), then release assets
+  # auto: tag archive → release asset → APK decompile
   if try_tag_archive 2>/dev/null; then
     imported=0
-  elif try_release_asset_archive; then
+  elif try_release_asset_archive 2>/dev/null; then
+    imported=0
+  elif "${ROOT}/scripts/import-cocoon-from-apk.sh"; then
     imported=0
   fi
 fi
@@ -150,6 +154,7 @@ if [[ "$imported" -ne 0 ]]; then
   echo "That zip is the git snapshot for the tag. If it only contains platforms/" >&2
   echo "and README, the Cocoon Shell app sources are not in that tree yet — check for a" >&2
   echo "newer tag or a separate release asset (non-APK zip)." >&2
-  echo "Release APK: https://github.com/${REPO}/releases/tag/${TAG}" >&2
+  echo "Tried: tag archive, release assets, and APK decompile (scripts/import-cocoon-from-apk.sh)." >&2
+  echo "Force APK import: SOURCE_MODE=apk ./scripts/import-cocoon-source-from-release.sh" >&2
   exit 4
 fi

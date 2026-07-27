@@ -1,21 +1,18 @@
-# Android / Gradle
-android/.gradle/
-android/.idea/
-android/**/build/
-android/**/local.properties
-android/**/*.iml
-android/.cxx/
-android/**/captures/
-android/**/.externalNativeBuild/
-android/**/google-services.json
+# Decompiled / generated Android tree (local import)
+android/app/
+android/build.gradle
+android/settings.gradle
+android/gradle/
+android/gradlew
+android/gradlew.bat
+android/gradle.properties
+android/SOURCE_VERSION
 
-# Keystores
-*.jks
-*.keystore
+# Archives from APK import (large)
+android/archives/*.zip
+!android/archives/.gitkeep
 
-# Import temp
-/tmp/
-
-# OS
-.DS_Store
-Thumbs.db
+# Keep Froglog scaffold in git
+!android/froglog-core/
+!android/README.md
+!android/DECOMPILED_BASELINE.md
