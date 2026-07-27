@@ -95,7 +95,7 @@ class FroglogRepository(
         mimeType: String?,
         capturedAtMillis: Long,
     ) {
-        if (!auth.picnicAutoUpload() || !auth.authState().isSignedIn) return
+        if (!auth.authState().isSignedIn) return
         queue.enqueueScreenshot(
             PendingPicnicScreenshot(
                 clientScreenshotKey = "cocoon:picnic:$picnicScreenshotId",
@@ -243,6 +243,10 @@ class FroglogRepository(
         scope.launch {
             syncNow()
         }
+    }
+
+    fun scheduleSyncAfterPicnicSubmit() {
+        scheduleSync()
     }
 
     companion object {

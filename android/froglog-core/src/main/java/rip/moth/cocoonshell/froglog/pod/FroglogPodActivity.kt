@@ -35,9 +35,7 @@ class FroglogPodActivity : ComponentActivity() {
                     auth = auth,
                     sync = sync,
                     wifiOnly = authStore.wifiOnly(),
-                    picnicAutoUpload = authStore.picnicAutoUpload(),
                     onWifiOnlyChange = { authStore.setWifiOnly(it) },
-                    onPicnicAutoUploadChange = { authStore.setPicnicAutoUpload(it) },
                     onLogin = { user, pass ->
                         lifecycleScope.launch {
                             repo.login(user, pass)

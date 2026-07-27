@@ -52,9 +52,7 @@ fun FroglogPodScreen(
     auth: FroglogAuthState,
     sync: FroglogSyncState,
     wifiOnly: Boolean,
-    picnicAutoUpload: Boolean,
     onWifiOnlyChange: (Boolean) -> Unit,
-    onPicnicAutoUploadChange: (Boolean) -> Unit,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String) -> Unit,
     onSync: () -> Unit,
@@ -152,11 +150,6 @@ fun FroglogPodScreen(
                 label = stringResource(R.string.froglog_wifi_only),
                 checked = wifiOnly,
                 onCheckedChange = onWifiOnlyChange,
-            )
-            SettingRow(
-                label = stringResource(R.string.froglog_picnic_auto_upload),
-                checked = picnicAutoUpload,
-                onCheckedChange = onPicnicAutoUploadChange,
             )
             Spacer(modifier = Modifier.height(24.dp))
         }

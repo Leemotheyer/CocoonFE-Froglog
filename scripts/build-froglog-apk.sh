@@ -55,6 +55,7 @@ cp -a "$TMP_SMALI/rip/moth/cocoonshell/froglog" "${TARGET_SMALI}/rip/moth/cocoon
 
 python3 "${ROOT}/scripts/patch-apk-smali.py" "$APKTOOL_DIR"
 python3 "${ROOT}/scripts/patch-apk-pods.py" "$APKTOOL_DIR"
+python3 "${ROOT}/scripts/patch-apk-picnic-froglog.py" "$APKTOOL_DIR"
 
 echo "==> Merge manifest entries"
 python3 "${ROOT}/scripts/patch-apk-manifest.py" "$APKTOOL_DIR"

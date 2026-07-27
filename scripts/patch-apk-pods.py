@@ -447,31 +447,6 @@ def patch_kd_a(path: Path) -> None:
     _write(path, text)
 
 
-def patch_picnic_share(path: Path) -> None:
-    text = _read(path)
-    marker = "FroglogCocoonHooks;->onPicnicScreenshotSaved"
-    if marker in text:
-        return
-    needle = """    iget-object v0, v0, Lke/ua;->a:Lrip/moth/cocoonshell/data/model/PicnicScreenshotRecord;
-
-    .line 279
-    .line 280
-    invoke-virtual {v0}, Lrip/moth/cocoonshell/data/model/PicnicScreenshotRecord;->getMimeType()Ljava/lang/String;"""
-    hook = """    iget-object v0, v0, Lke/ua;->a:Lrip/moth/cocoonshell/data/model/PicnicScreenshotRecord;
-
-    sget-object v2, Lld/a;->p:Lrip/moth/cocoonshell/CocoonApp;
-
-    invoke-static {v2, v0}, Lrip/moth/cocoonshell/froglog/FroglogCocoonHooks;->onPicnicScreenshotSaved(Landroid/content/Context;Ljava/lang/Object;)V
-
-    .line 279
-    .line 280
-    invoke-virtual {v0}, Lrip/moth/cocoonshell/data/model/PicnicScreenshotRecord;->getMimeType()Ljava/lang/String;"""
-    if needle not in text:
-        print("je.smali: picnic share hook point not found (skip)")
-        return
-    _write(path, text.replace(needle, hook))
-
-
 def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit(f"usage: {sys.argv[0]} <apktool-cocoon-dir>")
@@ -483,7 +458,6 @@ def main() -> None:
     patch_r0(smali3 / "jd/r0.smali")
     patch_kd_s(smali3 / "kd/s.smali")
     patch_kd_a(smali3 / "kd/a.smali")
-    patch_picnic_share(smali3 / "ke/je.smali")
     print("Froglog pod registry patched")
 
 

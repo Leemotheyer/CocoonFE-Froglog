@@ -64,36 +64,4 @@ object FroglogCocoonHooks {
             emulatorPackage = emulatorPackage,
         )
     }
-
-    /**
-     * Called when Picnic saves a screenshot ([PicnicScreenshotDao_Impl]) or when the user shares from Picnic.
-     */
-    @JvmStatic
-    fun onPicnicScreenshotSaved(context: Context?, record: Any?) {
-        if (context == null || record == null) return
-        try {
-            val clazz = record.javaClass
-            val id = clazz.getDeclaredField("id").apply { isAccessible = true }.getLong(record)
-            if (id <= 0L) return
-            val gameId = clazz.getDeclaredField("gameId").apply { isAccessible = true }.getLong(record)
-            val gameName = clazz.getDeclaredField("gameName").apply { isAccessible = true }.get(record) as String
-            val platformId = clazz.getDeclaredField("platformId").apply { isAccessible = true }.get(record) as String
-            val screenshotUri = clazz.getDeclaredField("screenshotUri").apply { isAccessible = true }.get(record) as String
-            val mimeType = runCatching {
-                clazz.getDeclaredField("mimeType").apply { isAccessible = true }.get(record) as? String
-            }.getOrNull()
-            val capturedAt = clazz.getDeclaredField("capturedAt").apply { isAccessible = true }.getLong(record)
-            FroglogRepository.get(context).enqueuePicnicScreenshot(
-                picnicScreenshotId = id,
-                cocoonGameId = gameId,
-                gameName = gameName,
-                platformId = platformId,
-                screenshotUri = screenshotUri,
-                mimeType = mimeType,
-                capturedAtMillis = capturedAt,
-            )
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to enqueue Picnic screenshot for Froglog", e)
-        }
-    }
 }

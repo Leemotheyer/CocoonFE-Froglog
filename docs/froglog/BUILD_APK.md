@@ -26,8 +26,9 @@ chmod +x scripts/build-froglog-apk.sh
 2. Baksmalis injector DEX and copies `rip/moth/cocoonshell/froglog/**` into `smali_classes6`.
 3. Decodes Cocoon with apktool.
 4. Patches `pf/c0.smali` to call `FroglogCocoonHooks.onGameSessionEndedWithD0` after each saved session.
-5. Merges Froglog Pod activity + `FroglogInitProvider` into `AndroidManifest.xml`.
-6. Rebuilds and signs the APK.
+5. Registers the Froglog Pod on the home Pods overlay and adds **Submit to Froglog** on Picnic screenshot detail (`ke/ff.smali`).
+6. Merges Froglog Pod activity + `FroglogInitProvider` into `AndroidManifest.xml`.
+7. Rebuilds and signs the APK.
 
 ## On device
 
@@ -37,6 +38,8 @@ adb shell am start -n rip.moth.cocoonshell/.rip.moth.cocoonshell.froglog.pod.Fro
 ```
 
 Sign in with a Froglog account, play a game in Cocoon, then open Froglog Pod and tap **Sync now** (sessions also enqueue automatically on save).
+
+To send a Picnic screenshot: open **Picnic** → open a screenshot → tap **Submit to Froglog** (sign in first if prompted). Then sync from Froglog Pod when ready.
 
 ## Library-only build
 
