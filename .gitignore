@@ -11,6 +11,7 @@ android/SOURCE_VERSION
 android/.gradle/
 android/**/build/
 android/apktool-cocoon/
+android/archives/
 android/dist/
 !android/dist/.gitkeep
 
