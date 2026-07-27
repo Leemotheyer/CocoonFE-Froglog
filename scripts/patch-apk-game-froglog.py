@@ -32,77 +32,69 @@ FROGLOG_BLOCK = """    const/16 v65, 0x3f0
     .line 1498
     move-object/from16 v0, v55
 
-    sget-object v66, Landroidx/compose/ui/platform/AndroidCompositionLocals_androidKt;->b:Lz0/m2;
+    move-object/from16 v9, p0
 
-    invoke-virtual {v14, v66}, Lz0/e0;->j(Lz0/n1;)Ljava/lang/Object;
+    sget-object v1, Landroidx/compose/ui/platform/AndroidCompositionLocals_androidKt;->b:Lz0/m2;
 
-    move-result-object v66
+    invoke-virtual {v14, v1}, Lz0/e0;->j(Lz0/n1;)Ljava/lang/Object;
 
-    check-cast v66, Landroid/content/Context;
+    move-result-object v1
 
-    invoke-virtual {v14, v66}, Lz0/e0;->h(Ljava/lang/Object;)Z
+    check-cast v1, Landroid/content/Context;
 
-    move-result v67
+    invoke-virtual {v14, v1}, Lz0/e0;->h(Ljava/lang/Object;)Z
 
-    move-object/from16 v68, p0
+    move-result v2
 
-    invoke-virtual {v14, v68}, Lz0/e0;->f(Ljava/lang/Object;)Z
+    invoke-virtual {v14, v9}, Lz0/e0;->f(Ljava/lang/Object;)Z
 
-    move-result v69
+    move-result v3
 
-    or-int/2addr v67, v69
+    or-int/2addr v2, v3
 
     invoke-virtual {v14}, Lz0/e0;->Q()Ljava/lang/Object;
 
-    move-result-object v69
+    move-result-object v3
 
-    if-nez v67, :froglog_game_remembered
+    if-nez v2, :froglog_game_remembered
 
-    sget-object v67, Lz0/j;->a:Lz0/c;
+    sget-object v2, Lz0/j;->a:Lz0/c;
 
-    if-ne v69, v67, :froglog_game_invoke
+    if-ne v3, v2, :froglog_game_invoke
 
     :froglog_game_remembered
-    new-instance v69, Lrip/moth/cocoonshell/froglog/game/FroglogGameMenuAction;
+    new-instance v3, Lrip/moth/cocoonshell/froglog/game/FroglogGameMenuAction;
 
-    invoke-direct {v69, v66, v68}, Lrip/moth/cocoonshell/froglog/game/FroglogGameMenuAction;-><init>(Landroid/content/Context;Ljava/lang/String;)V
+    invoke-direct {v3, v1, v9}, Lrip/moth/cocoonshell/froglog/game/FroglogGameMenuAction;-><init>(Landroid/content/Context;Ljava/lang/String;)V
 
-    invoke-virtual {v14, v69}, Lz0/e0;->m0(Ljava/lang/Object;)V
+    invoke-virtual {v14, v3}, Lz0/e0;->m0(Ljava/lang/Object;)V
 
     :froglog_game_invoke
-    move-object/from16 v58, v69
+    check-cast v3, Lwa/a;
 
-    check-cast v58, Lwa/a;
+    new-instance v4, Lve/w4;
 
-    new-instance v53, Lve/w4;
+    const-string v5, "X"
 
-    const v66, 0x7f0d0695
+    sget-object v6, Lme/b;->CHECK:Lme/b;
 
-    invoke-static {v66, v14}, Lo1/d;->y(ILz0/e0;)Ljava/lang/String;
+    move-object v7, v3
 
-    move-result-object v54
+    const/16 v8, 0x0
 
-    sget-object v56, Lme/b;->CHECK:Lme/b;
+    const/16 v10, 0x0
 
-    const-string v55, "X"
+    const/16 v11, 0x0
 
-    move-object/from16 v57, v58
+    const/16 v12, 0x0
 
-    const/16 v59, 0x0
+    const/16 v13, 0x0
 
-    const/16 v60, 0x0
+    const/16 v14, 0x3f0
 
-    const/16 v61, 0x0
+    invoke-direct/range {v4 .. v14}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
 
-    const/16 v62, 0x0
-
-    const/16 v63, 0x0
-
-    const/16 v64, 0x3f0
-
-    invoke-direct/range {v53 .. v64}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
-
-    filled-new-array {v15, v0, v53}, [Lve/w4;"""
+    filled-new-array {v15, v0, v4}, [Lve/w4;"""
 
 
 def main() -> None:

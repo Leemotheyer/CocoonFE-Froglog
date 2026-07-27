@@ -18,79 +18,72 @@ ANCHOR = """    invoke-direct/range {v12 .. v22}, Lve/w4;-><init>(Ljava/lang/Str
     .line 220
     move-result-object v10"""
 
-BATCH_BLOCK = """    sget-object v23, Landroidx/compose/ui/platform/AndroidCompositionLocals_androidKt;->b:Lz0/m2;
+# Registers v0–v15 only for non-/range invoke-* (method b uses v11 = composer, v3 = selected list).
+BATCH_BLOCK = """    invoke-direct/range {v12 .. v22}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
 
-    invoke-virtual {v11, v23}, Lz0/e0;->j(Lz0/n1;)Ljava/lang/Object;
+    sget-object v0, Landroidx/compose/ui/platform/AndroidCompositionLocals_androidKt;->b:Lz0/m2;
 
-    move-result-object v23
+    invoke-virtual {v11, v0}, Lz0/e0;->j(Lz0/n1;)Ljava/lang/Object;
 
-    check-cast v23, Landroid/content/Context;
+    move-result-object v0
 
-    invoke-virtual {v11, v23}, Lz0/e0;->h(Ljava/lang/Object;)Z
+    check-cast v0, Landroid/content/Context;
 
-    move-result v24
+    invoke-virtual {v11, v0}, Lz0/e0;->h(Ljava/lang/Object;)Z
+
+    move-result v1
 
     invoke-virtual {v11, v3}, Lz0/e0;->h(Ljava/lang/Object;)Z
 
-    move-result v25
+    move-result v2
 
-    or-int/2addr v24, v25
+    or-int/2addr v1, v2
 
     invoke-virtual {v11}, Lz0/e0;->Q()Ljava/lang/Object;
 
-    move-result-object v25
+    move-result-object v2
 
-    if-nez v24, :froglog_batch_remembered
+    if-nez v1, :froglog_batch_remembered
 
-    sget-object v24, Lz0/j;->a:Lz0/c;
+    sget-object v1, Lz0/j;->a:Lz0/c;
 
-    if-ne v25, v24, :froglog_batch_invoke
+    if-ne v2, v1, :froglog_batch_invoke
 
     :froglog_batch_remembered
-    new-instance v25, Lrip/moth/cocoonshell/froglog/picnic/FroglogPicnicBatchSubmitAction;
+    new-instance v2, Lrip/moth/cocoonshell/froglog/picnic/FroglogPicnicBatchSubmitAction;
 
-    invoke-direct {v25, v23, v3}, Lrip/moth/cocoonshell/froglog/picnic/FroglogPicnicBatchSubmitAction;-><init>(Landroid/content/Context;Ljava/util/List;)V
+    invoke-direct {v2, v0, v3}, Lrip/moth/cocoonshell/froglog/picnic/FroglogPicnicBatchSubmitAction;-><init>(Landroid/content/Context;Ljava/util/List;)V
 
-    invoke-virtual {v11, v25}, Lz0/e0;->m0(Ljava/lang/Object;)V
+    invoke-virtual {v11, v2}, Lz0/e0;->m0(Ljava/lang/Object;)V
 
     :froglog_batch_invoke
-    move-object/from16 v58, v25
+    check-cast v2, Lwa/a;
 
-    check-cast v58, Lwa/a;
+    new-instance v4, Lve/w4;
 
-    new-instance v26, Lve/w4;
+    const-string v5, "X"
 
-    const v27, 0x7f0d0696
+    sget-object v6, Lme/b;->SHARE:Lme/b;
 
-    invoke-static {v27, v11}, Lo1/d;->y(ILz0/e0;)Ljava/lang/String;
+    move-object v7, v2
 
-    move-result-object v28
+    const/16 v8, 0x0
 
-    sget-object v29, Lme/b;->SHARE:Lme/b;
+    const/16 v9, 0x0
 
-    const-string v31, "X"
+    const/16 v10, 0x0
 
-    const/16 v32, 0x0
+    const/16 v13, 0x0
 
-    const/16 v33, 0x0
+    const/16 v14, 0x3f0
 
-    const/16 v34, 0x0
+    invoke-direct/range {v4 .. v14}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
 
-    const/16 v35, 0x0
+    filled-new-array {v4, v12}, [Lve/w4;
 
-    const/16 v36, 0x3f0
+    move-result-object v0
 
-    move-object/from16 v30, v58
-
-    invoke-direct/range {v26 .. v36}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
-
-    invoke-direct/range {v12 .. v22}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
-
-    filled-new-array {v26, v12}, [Lve/w4;
-
-    move-result-object v23
-
-    invoke-static {v23}, Lia/k;->z0([Ljava/lang/Object;)Ljava/util/List;
+    invoke-static {v0}, Lia/k;->z0([Ljava/lang/Object;)Ljava/util/List;
 
     move-result-object v10"""
 

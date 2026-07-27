@@ -20,7 +20,9 @@ SELECT_BLOCK = """    .line 726
     .line 731
     invoke-static {v3, v4, v5, v10, v1}, Lke/ff;->W(Ljava/lang/String;Lwa/a;Lp1/o;Lz0/e0;I)V"""
 
-FROGLOG_SUBMIT_BLOCK = """    const v3, 0x7f0d0693
+FROGLOG_SUBMIT_BLOCK = """    move-object/from16 v8, p0
+
+    const v3, 0x7f0d0693
 
     invoke-static {v3, v10}, Lo1/d;->y(ILz0/e0;)Ljava/lang/String;
 
@@ -38,7 +40,7 @@ FROGLOG_SUBMIT_BLOCK = """    const v3, 0x7f0d0693
 
     move-result v6
 
-    invoke-virtual {v10, p0}, Lz0/e0;->f(Ljava/lang/Object;)Z
+    invoke-virtual {v10, v8}, Lz0/e0;->f(Ljava/lang/Object;)Z
 
     move-result v7
 
@@ -57,7 +59,7 @@ FROGLOG_SUBMIT_BLOCK = """    const v3, 0x7f0d0693
     :froglog_submit_remembered
     new-instance v7, Lrip/moth/cocoonshell/froglog/picnic/FroglogPicnicSubmitAction;
 
-    invoke-direct {v7, v4, p0}, Lrip/moth/cocoonshell/froglog/picnic/FroglogPicnicSubmitAction;-><init>(Landroid/content/Context;Ljava/lang/Object;)V
+    invoke-direct {v7, v4, v8}, Lrip/moth/cocoonshell/froglog/picnic/FroglogPicnicSubmitAction;-><init>(Landroid/content/Context;Ljava/lang/Object;)V
 
     invoke-virtual {v10, v7}, Lz0/e0;->m0(Ljava/lang/Object;)V
 
