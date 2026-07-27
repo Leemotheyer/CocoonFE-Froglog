@@ -63,6 +63,9 @@ python3 "${ROOT}/scripts/patch-apk-game-froglog.py" "$APKTOOL_DIR"
 echo "==> Merge manifest entries"
 python3 "${ROOT}/scripts/patch-apk-manifest.py" "$APKTOOL_DIR"
 
+echo "==> Distinct application id (side-by-side with stock Cocoon)"
+python3 "${ROOT}/scripts/patch-apk-application-id.py" "$APKTOOL_DIR"
+
 echo "==> apktool build"
 apktool b "$APKTOOL_DIR" -o "$OUT_APK"
 

@@ -34,7 +34,7 @@ chmod +x scripts/build-froglog-apk.sh
 
 ```bash
 adb install -r android/dist/cocoon-froglog.apk
-adb shell am start -n rip.moth.cocoonshell/.rip.moth.cocoonshell.froglog.pod.FroglogPodActivity
+adb shell am start -n rip.moth.cocoonshell.froglog/rip.moth.cocoonshell.froglog.pod.FroglogPodActivity
 ```
 
 Sign in with a Froglog account, play a game in Cocoon, then open Froglog Pod and tap **Sync now** (sessions also enqueue automatically on save).

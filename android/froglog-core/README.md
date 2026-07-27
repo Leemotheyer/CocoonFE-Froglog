@@ -44,7 +44,7 @@ Search decompiled tree for `GameSessionDao` insert / session end callback.
 ### Launch Pod (debug)
 
 ```bash
-adb shell am start -n rip.moth.cocoonshell/rip.moth.cocoonshell.froglog.pod.FroglogPodActivity
+adb shell am start -n rip.moth.cocoonshell.froglog/rip.moth.cocoonshell.froglog.pod.FroglogPodActivity
 ```
 
 Home screen Pod shortcut: patch pod registry (see `kd/s.java` near `LogPodActivity`).
