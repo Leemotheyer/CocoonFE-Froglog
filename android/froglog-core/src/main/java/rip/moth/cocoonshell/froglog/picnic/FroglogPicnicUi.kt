@@ -8,7 +8,7 @@ import rip.moth.cocoonshell.froglog.bridge.FroglogRepository
 object FroglogPicnicUi {
   /** @param picnicUa Picnic list item (`ke/ua`) holding `PicnicScreenshotRecord` in field `a`. */
   @JvmStatic
-  fun submitFromPicnicUa(context: Context, picnicUa: Any) {
+  fun submitFromPicnicUa(context: Context, picnicUa: Any, showToast: Boolean = true) {
     val repo = FroglogRepository.get(context)
     if (!repo.authState.value.isSignedIn) {
       Toast.makeText(context, context.getString(R.string.froglog_sign_in_required), Toast.LENGTH_SHORT).show()
@@ -38,7 +38,9 @@ object FroglogPicnicUi {
         capturedAtMillis = capturedAt,
       )
       repo.scheduleSyncAfterPicnicSubmit()
-      Toast.makeText(context, context.getString(R.string.picnic_froglog_queued), Toast.LENGTH_SHORT).show()
+      if (showToast) {
+        Toast.makeText(context, context.getString(R.string.picnic_froglog_queued), Toast.LENGTH_SHORT).show()
+      }
     } catch (_: Exception) {
       Toast.makeText(context, context.getString(R.string.froglog_error_generic), Toast.LENGTH_SHORT).show()
     }

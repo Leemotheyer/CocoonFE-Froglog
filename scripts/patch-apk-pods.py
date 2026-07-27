@@ -58,6 +58,48 @@ def patch_resources(base: Path) -> None:
 
     drawable_dst = base / "res/drawable/froglog.xml"
     shutil.copy2(EXTRA_RES / "drawable/froglog.xml", drawable_dst)
+    patch_extra_froglog_strings(base)
+
+
+def patch_extra_froglog_strings(base: Path) -> None:
+    strings = base / "res/values/strings.xml"
+    text = _read(strings)
+    extras = [
+        ("froglog_open_in_froglog", "Open in Froglog"),
+        ("picnic_submit_froglog_batch", "Submit to Froglog"),
+    ]
+    for name, value in extras:
+        if f'name="{name}"' not in text:
+            if 'name="pods_overlay_froglog"' in text:
+                text = text.replace(
+                    "    <string name=\"pods_overlay_froglog\">Froglog</string>\n",
+                    f"    <string name=\"pods_overlay_froglog\">Froglog</string>\n"
+                    f'    <string name="{name}">{value}</string>\n',
+                    1,
+                )
+            else:
+                text = text.replace(
+                    "</resources>",
+                    f'    <string name="{name}">{value}</string>\n</resources>',
+                    1,
+                )
+    _write(strings, text)
+
+    public_xml = base / "res/values/public.xml"
+    pub = _read(public_xml)
+    id_map = [
+        ("froglog_open_in_froglog", "0x7f0d0695"),
+        ("picnic_submit_froglog_batch", "0x7f0d0696"),
+    ]
+    for name, sid in id_map:
+        if f'name="{name}"' not in pub:
+            pub = pub.replace(
+                '    <public type="string" name="picnic_froglog_queued" id="0x7f0d0694" />\n',
+                f'    <public type="string" name="picnic_froglog_queued" id="0x7f0d0694" />\n'
+                f'    <public type="string" name="{name}" id="{sid}" />\n',
+                1,
+            )
+    _write(public_xml, pub)
 
 
 def patch_p0(path: Path) -> None:

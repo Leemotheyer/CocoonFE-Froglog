@@ -72,6 +72,19 @@ class FroglogQueueStore(context: Context) {
         prefs.edit().putInt(linkKey(cocoonGameId), froglogGameId).apply()
     }
 
+    fun gameLinkByTitle(title: String): Int? {
+        val key = prefs.getInt(titleLinkKey(title), -1)
+        return if (key > 0) key else null
+    }
+
+    fun saveGameLinkByTitle(title: String, froglogGameId: Int) {
+        prefs.edit().putInt(titleLinkKey(title), froglogGameId).apply()
+    }
+
+    fun clearGameLink(cocoonGameId: Long) {
+        prefs.edit().remove(linkKey(cocoonGameId)).apply()
+    }
+
     fun lastSyncError(): String? = prefs.getString(KEY_LAST_ERROR, null)
 
     fun setLastSyncError(msg: String?) {
@@ -86,6 +99,24 @@ class FroglogQueueStore(context: Context) {
 
     private fun linkKey(cocoonGameId: Long) = "link_$cocoonGameId"
 
+    private fun titleLinkKey(title: String) = "link_t_${title.trim().lowercase()}"
+
+    fun setItemError(clientKey: String, error: String?) {
+        if (clientKey.startsWith("cocoon:picnic:")) {
+            val list = pendingScreenshots().map {
+                if (it.clientScreenshotKey == clientKey) it.copy(lastError = error) else it
+            }
+            saveScreenshots(list)
+        } else {
+            val list = pendingSessions().map {
+                if (it.clientSessionKey == clientKey) it.copy(lastError = error) else it
+            }
+            saveSessions(list)
+        }
+    }
+
+    fun clearItemError(clientKey: String) = setItemError(clientKey, null)
+
     private fun PendingPlaySession.toJson(): JSONObject = JSONObject()
         .put("clientSessionKey", clientSessionKey)
         .put("cocoonGameId", cocoonGameId)
@@ -95,6 +126,7 @@ class FroglogQueueStore(context: Context) {
         .put("hours", hours)
         .put("notes", notes)
         .put("emulatorPackage", emulatorPackage)
+        .put("lastError", lastError)
 
     private fun JSONObject.toSession(): PendingPlaySession = PendingPlaySession(
         clientSessionKey = getString("clientSessionKey"),
@@ -109,6 +141,7 @@ class FroglogQueueStore(context: Context) {
         } else {
             null
         },
+        lastError = if (has("lastError") && !isNull("lastError")) getString("lastError") else null,
     )
 
     private fun PendingPicnicScreenshot.toJson(): JSONObject = JSONObject()
@@ -120,6 +153,7 @@ class FroglogQueueStore(context: Context) {
         .put("screenshotUri", screenshotUri)
         .put("mimeType", mimeType)
         .put("capturedAtMillis", capturedAtMillis)
+        .put("lastError", lastError)
 
     private fun JSONObject.toScreenshot(): PendingPicnicScreenshot = PendingPicnicScreenshot(
         clientScreenshotKey = getString("clientScreenshotKey"),
@@ -130,6 +164,7 @@ class FroglogQueueStore(context: Context) {
         screenshotUri = getString("screenshotUri"),
         mimeType = if (has("mimeType") && !isNull("mimeType")) getString("mimeType") else null,
         capturedAtMillis = getLong("capturedAtMillis"),
+        lastError = if (has("lastError") && !isNull("lastError")) getString("lastError") else null,
     )
 
     companion object {

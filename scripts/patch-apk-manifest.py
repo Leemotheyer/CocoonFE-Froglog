@@ -12,6 +12,12 @@ ACTIVITY_SNIPPET = """
             android:label="Froglog Pod"
             android:theme="@style/Theme.Cocoon"
             android:configChanges="screenSize|screenLayout|orientation|keyboardHidden" />
+        <activity
+            android:name="rip.moth.cocoonshell.froglog.game.FroglogGameLinkActivity"
+            android:exported="false"
+            android:label="Open in Froglog"
+            android:theme="@style/Theme.Cocoon"
+            android:configChanges="screenSize|screenLayout|orientation|keyboardHidden" />
         <provider
             android:name="rip.moth.cocoonshell.froglog.FroglogInitProvider"
             android:authorities="rip.moth.cocoonshell.froglog-init"

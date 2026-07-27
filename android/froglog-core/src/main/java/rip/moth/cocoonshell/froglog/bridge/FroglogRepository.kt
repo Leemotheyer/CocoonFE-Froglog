@@ -10,12 +10,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import rip.moth.cocoonshell.froglog.FroglogAuthState
+import rip.moth.cocoonshell.froglog.FroglogNetwork
+import rip.moth.cocoonshell.froglog.FroglogOutboxItem
+import rip.moth.cocoonshell.froglog.FroglogOutboxKind
 import rip.moth.cocoonshell.froglog.FroglogSyncState
 import rip.moth.cocoonshell.froglog.PendingPicnicScreenshot
 import rip.moth.cocoonshell.froglog.PendingPlaySession
 import rip.moth.cocoonshell.froglog.api.FroglogApi
 import rip.moth.cocoonshell.froglog.auth.FroglogAuthStore
 import rip.moth.cocoonshell.froglog.data.FroglogQueueStore
+import org.json.JSONArray
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -113,27 +117,129 @@ class FroglogRepository(
     }
 
     override suspend fun syncNow(): Result<Int> = runCatching {
+        if (!FroglogNetwork.isOnline(app)) {
+            refreshSync()
+            error("offline")
+        }
         val token = auth.token() ?: error("Not signed in")
         var uploaded = 0
+        var lastError: String? = null
         for (session in queue.pendingSessions()) {
-            val gameId = resolveFroglogGameId(token, session.cocoonGameId, session.gameName, session.platformId)
-            api.postSession(token, gameId, session)
-            queue.removeSession(session.clientSessionKey)
-            uploaded++
+            try {
+                val gameId = resolveFroglogGameId(token, session.cocoonGameId, session.gameName, session.platformId)
+                api.postSession(token, gameId, session)
+                queue.removeSession(session.clientSessionKey)
+                uploaded++
+            } catch (e: Exception) {
+                queue.setItemError(session.clientSessionKey, e.message)
+                lastError = e.message
+            }
         }
         for (shot in queue.pendingScreenshots()) {
-            uploadPicnicScreenshot(token, shot)
-            queue.removeScreenshot(shot.clientScreenshotKey)
-            uploaded++
+            try {
+                uploadPicnicScreenshot(token, shot)
+                queue.removeScreenshot(shot.clientScreenshotKey)
+                uploaded++
+            } catch (e: Exception) {
+                queue.setItemError(shot.clientScreenshotKey, e.message)
+                lastError = e.message
+            }
         }
-        queue.setLastSyncError(null)
-        queue.setLastSyncAt(System.currentTimeMillis())
+        queue.setLastSyncError(lastError)
+        if (uploaded > 0) {
+            queue.setLastSyncAt(System.currentTimeMillis())
+        }
         refreshSync()
         uploaded
     }.onFailure { e ->
-        queue.setLastSyncError(e.message)
+        if (e.message != "offline") {
+            queue.setLastSyncError(e.message)
+        }
         refreshSync()
     }
+
+    fun outboxItems(): List<FroglogOutboxItem> {
+        val sessions = queue.pendingSessions().map {
+            FroglogOutboxItem(
+                key = it.clientSessionKey,
+                kind = FroglogOutboxKind.SESSION,
+                title = it.gameName,
+                subtitle = "${it.date} · ${"%.1f".format(Locale.US, it.hours)} h",
+                error = it.lastError,
+                cocoonGameId = it.cocoonGameId,
+            )
+        }
+        val shots = queue.pendingScreenshots().map {
+            FroglogOutboxItem(
+                key = it.clientScreenshotKey,
+                kind = FroglogOutboxKind.SCREENSHOT,
+                title = it.gameName,
+                subtitle = "Picnic screenshot",
+                error = it.lastError,
+                cocoonGameId = it.cocoonGameId,
+            )
+        }
+        return sessions + shots
+    }
+
+    fun dismissOutboxItem(key: String) {
+        if (key.startsWith("cocoon:picnic:")) {
+            queue.removeScreenshot(key)
+        } else {
+            queue.removeSession(key)
+        }
+        refreshSync()
+    }
+
+    suspend fun retryOutboxItem(key: String): Result<Unit> = runCatching {
+        if (!FroglogNetwork.isOnline(app)) error("offline")
+        val token = auth.token() ?: error("Not signed in")
+        if (key.startsWith("cocoon:picnic:")) {
+            val shot = queue.pendingScreenshots().firstOrNull { it.clientScreenshotKey == key }
+                ?: error("Item not found")
+            uploadPicnicScreenshot(token, shot)
+            queue.removeScreenshot(key)
+        } else {
+            val session = queue.pendingSessions().firstOrNull { it.clientSessionKey == key }
+                ?: error("Item not found")
+            val gameId = resolveFroglogGameId(token, session.cocoonGameId, session.gameName, session.platformId)
+            api.postSession(token, gameId, session)
+            queue.removeSession(key)
+        }
+        queue.clearItemError(key)
+        refreshSync()
+    }
+
+    fun linkedFroglogGameId(cocoonGameId: Long, gameTitle: String): Int? {
+        queue.gameLink(cocoonGameId)?.let { return it }
+        return queue.gameLinkByTitle(gameTitle)
+    }
+
+    suspend fun searchFroglogGames(query: String): JSONArray = runCatching {
+        val token = auth.token() ?: return JSONArray()
+        api.searchGames(token, query)
+    }.getOrElse { JSONArray() }
+
+    suspend fun linkGame(cocoonGameId: Long, gameTitle: String, froglogGameId: Int) {
+        if (cocoonGameId > 0L) {
+            queue.saveGameLink(cocoonGameId, froglogGameId)
+        }
+        queue.saveGameLinkByTitle(gameTitle, froglogGameId)
+    }
+
+    suspend fun createFroglogGameAndLink(
+        cocoonGameId: Long,
+        gameTitle: String,
+        platformId: String,
+    ): Int {
+        val token = auth.token() ?: error("Not signed in")
+        val id = api.createGame(token, gameTitle, platformId)
+        linkGame(cocoonGameId, gameTitle, id)
+        return id
+    }
+
+    fun gameWebUrl(froglogGameId: Int): String =
+        "${rip.moth.cocoonshell.froglog.BuildConfig.FROGLOG_WEB_BASE.trimEnd('/')}/games/$froglogGameId"
 
     override fun enqueueScreenshot(cocoonScreenshotId: Long): Result<Unit> =
         Result.failure(UnsupportedOperationException("Load screenshot record from Picnic first"))
@@ -147,12 +253,29 @@ class FroglogRepository(
     }
 
     private fun buildSyncState(): FroglogSyncState {
-        val sessions = queue.pendingSessions().size
-        val shots = queue.pendingScreenshots().size
+        val sessionList = queue.pendingSessions()
+        val shotList = queue.pendingScreenshots()
+        val sessions = sessionList.size
+        val shots = shotList.size
+        val errors = sessionList.count { !it.lastError.isNullOrBlank() } +
+            shotList.count { !it.lastError.isNullOrBlank() }
+        val offline = !FroglogNetwork.isOnline(app)
+        val pending = sessions + shots
+        val statusLine = when {
+            !auth.authState().isSignedIn && pending > 0 -> null
+            offline && pending > 0 -> "queued_offline"
+            pending > 0 && errors > 0 -> "pending_with_errors"
+            pending > 0 -> "queued"
+            errors > 0 -> "errors"
+            else -> null
+        }
         return FroglogSyncState(
-            pendingCount = sessions + shots,
+            pendingCount = pending,
             pendingSessionCount = sessions,
             pendingScreenshotCount = shots,
+            errorCount = errors,
+            isOffline = offline,
+            statusLine = statusLine,
             lastSyncError = queue.lastSyncError(),
             lastSyncAtMillis = queue.lastSyncAt().takeIf { it > 0L },
         )
@@ -165,6 +288,10 @@ class FroglogRepository(
         platformId: String,
     ): Int {
         queue.gameLink(cocoonGameId)?.let { return it }
+        queue.gameLinkByTitle(gameName)?.let {
+            if (cocoonGameId > 0L) queue.saveGameLink(cocoonGameId, it)
+            return it
+        }
         val games = api.listGames(token)
         for (i in 0 until games.length()) {
             val g = games.getJSONObject(i)
@@ -247,6 +374,10 @@ class FroglogRepository(
 
     fun scheduleSyncAfterPicnicSubmit() {
         scheduleSync()
+    }
+
+    fun refreshConnectivity() {
+        refreshSync()
     }
 
     companion object {

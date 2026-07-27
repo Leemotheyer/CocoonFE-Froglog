@@ -1,6 +1,5 @@
 package rip.moth.cocoonshell.froglog.pod
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,12 +36,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import rip.moth.cocoonshell.froglog.FroglogAuthState
+import rip.moth.cocoonshell.froglog.FroglogOutboxItem
 import rip.moth.cocoonshell.froglog.FroglogSyncState
 import rip.moth.cocoonshell.froglog.R
 
@@ -51,107 +50,126 @@ import rip.moth.cocoonshell.froglog.R
 fun FroglogPodScreen(
     auth: FroglogAuthState,
     sync: FroglogSyncState,
+    outboxItems: List<FroglogOutboxItem>,
+    showOutbox: Boolean,
     wifiOnly: Boolean,
     onWifiOnlyChange: (Boolean) -> Unit,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String) -> Unit,
     onSync: () -> Unit,
     onSignOut: () -> Unit,
+    onOpenOutbox: () -> Unit,
+    onCloseOutbox: () -> Unit,
+    onRetryOutboxItem: (String) -> Unit,
+    onDismissOutboxItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    var username by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    val (gradStart, gradEnd) = FroglogPodChrome.breezeGradient()
-    val background = Brush.verticalGradient(
-        colors = listOf(Color(gradStart.toULong()), Color(gradEnd.toULong())),
-    )
+    FroglogCocoonTheme {
+        if (showOutbox) {
+            FroglogOutboxScreen(
+                items = outboxItems,
+                isOffline = sync.isOffline,
+                onBack = onCloseOutbox,
+                onRetry = onRetryOutboxItem,
+                onDismiss = onDismissOutboxItem,
+                onSyncAll = onSync,
+            )
+            return@FroglogCocoonTheme
+        }
+        var username by rememberSaveable { mutableStateOf("") }
+        var password by rememberSaveable { mutableStateOf("") }
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(background),
-        containerColor = Color.Transparent,
-        topBar = {
-            TopAppBar(
-                modifier = Modifier.statusBarsPadding(),
-                title = {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.froglog_pod_title),
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = stringResource(R.string.froglog_pod_subtitle),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
-            )
-        },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            StatusCard(auth = auth, sync = sync)
-            if (!auth.isSignedIn) {
-                OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = { Text(stringResource(R.string.froglog_username)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    modifier = Modifier.statusBarsPadding(),
+                    title = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.froglog_pod_title),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = stringResource(R.string.froglog_pod_subtitle),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent,
+                    ),
                 )
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text(stringResource(R.string.froglog_password)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                FroglogSyncAffordance(
+                    auth = auth,
+                    sync = sync,
+                    onOpenOutbox = onOpenOutbox,
+                    onOpenFroglogPod = { /* already here */ },
                 )
-                Button(
-                    onClick = { onLogin(username, password) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.froglog_login))
+                StatusCard(auth = auth, sync = sync)
+                if (!auth.isSignedIn) {
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        label = { Text(stringResource(R.string.froglog_username)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text(stringResource(R.string.froglog_password)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    Button(
+                        onClick = { onLogin(username, password) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.froglog_login))
+                    }
+                    OutlinedButton(
+                        onClick = { onRegister(username, password) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.froglog_register))
+                    }
+                } else {
+                    Button(
+                        onClick = onSync,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = sync.pendingCount > 0 && !sync.isOffline,
+                    ) {
+                        Text(stringResource(R.string.froglog_sync_now))
+                    }
+                    TextButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.froglog_sign_out))
+                    }
                 }
-                OutlinedButton(
-                    onClick = { onRegister(username, password) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.froglog_register))
-                }
-            } else {
-                Button(
-                    onClick = onSync,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = sync.pendingCount > 0,
-                ) {
-                    Text(stringResource(R.string.froglog_sync_now))
-                }
-                TextButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.froglog_sign_out))
-                }
+                SettingRow(
+                    label = stringResource(R.string.froglog_wifi_only),
+                    checked = wifiOnly,
+                    onCheckedChange = onWifiOnlyChange,
+                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
-            SettingRow(
-                label = stringResource(R.string.froglog_wifi_only),
-                checked = wifiOnly,
-                onCheckedChange = onWifiOnlyChange,
-            )
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -174,16 +192,27 @@ private fun StatusCard(auth: FroglogAuthState, sync: FroglogSyncState) {
                 },
                 style = MaterialTheme.typography.titleMedium,
             )
-            Text(
-                text = stringResource(
-                    R.string.froglog_pending_queue_detail,
-                    sync.pendingSessionCount,
-                    sync.pendingScreenshotCount,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            sync.lastSyncError?.let { err ->
-                Text(text = err, color = MaterialTheme.colorScheme.error)
+            val queueLine = when {
+                sync.isOffline && sync.pendingCount > 0 ->
+                    stringResource(R.string.froglog_status_queued_offline, sync.pendingCount)
+                sync.pendingCount > 0 ->
+                    stringResource(
+                        R.string.froglog_pending_queue_detail,
+                        sync.pendingSessionCount,
+                        sync.pendingScreenshotCount,
+                    )
+                else -> stringResource(R.string.froglog_status_nothing_pending)
+            }
+            Text(text = queueLine, style = MaterialTheme.typography.bodyMedium)
+            if (sync.errorCount > 0) {
+                Text(
+                    text = stringResource(R.string.froglog_status_errors, sync.errorCount),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            sync.lastSyncError?.takeIf { !sync.isOffline }?.let { err ->
+                Text(text = err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
