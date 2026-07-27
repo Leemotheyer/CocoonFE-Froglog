@@ -9,7 +9,7 @@ Fork of [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE): **one Cocoon ap
 | Platform catalog (`platforms/`) | Tracked with upstream |
 | Android sources (`android/`) | Run `scripts/import-cocoon-from-apk.sh` (decompile release APK) or `import-cocoon-source-from-release.sh` (`auto`) |
 | Froglog API | Documented from [wiki.froglog.co.uk/Api](https://wiki.froglog.co.uk/Api) |
-| Froglog Pod + sync code | **`froglog-core`** + `./scripts/build-froglog-apk.sh` → `android/dist/cocoon-froglog.apk` |
+| Froglog Pod + sync code | **`froglog-core`** + `./scripts/build-froglog-apk.sh` → `android/dist/cocoon-froglog.apk`; **alpha APKs:** [Releases](https://github.com/Leemotheyer/CocoonFE-Froglog/releases) (`cocoon-froglog-*-alpha`) |
 
 ## Documentation
 
