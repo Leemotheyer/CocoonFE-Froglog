@@ -5,8 +5,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+# At :goto_1, v0 is Lpf/d0 (not Lpf/y); v4 is the session date string; v1 is insert row id.
 HOOK = """
-    iget-object v10, v0, Lpf/y;->a:Lpf/d0;
+    move-object v10, v0
 
     move-object v11, v4
 
@@ -22,6 +23,8 @@ HOOK = """
 """
 
 MARKER = "FroglogCocoonHooks;->onGameSessionEndedWithD0"
+WRONG_D0_LOAD = "    iget-object v10, v0, Lpf/y;->a:Lpf/d0;"
+CORRECT_D0_LOAD = "    move-object v10, v0"
 
 
 def main() -> None:
@@ -31,7 +34,12 @@ def main() -> None:
     path = base / "smali_classes3/pf/c0.smali"
     text = path.read_text()
     if MARKER in text:
-        print("c0.smali already patched")
+        if WRONG_D0_LOAD in text:
+            text = text.replace(WRONG_D0_LOAD, CORRECT_D0_LOAD, 1)
+            path.write_text(text)
+            print("Fixed pf/c0.smali Froglog hook (v0 is pf/d0 at :goto_1)")
+        else:
+            print("c0.smali already patched")
         return
     needle = "    invoke-virtual {v1}, Ljava/lang/Number;->longValue()J\n\n    .line 134\n    .line 135\n    .line 136\n    move-result-wide v1\n"
     if needle not in text:
