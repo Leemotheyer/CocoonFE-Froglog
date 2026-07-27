@@ -8,6 +8,9 @@ APK="${1:-${ROOT}/android/dist/cocoon-froglog.apk}"
 PKG="rip.moth.cocoonshell.froglog"
 ACTIVITY="${PKG}/rip.moth.cocoonshell.MainActivity"
 ADB="${ADB:-adb}"
+if [[ "$ADB" == "adb" && -n "${ANDROID_HOME:-}" && -x "${ANDROID_HOME}/platform-tools/adb" ]]; then
+  ADB="${ANDROID_HOME}/platform-tools/adb"
+fi
 WAIT_SEC="${FROGLOG_SMOKE_WAIT_SEC:-25}"
 
 if [[ ! -f "$APK" ]]; then
