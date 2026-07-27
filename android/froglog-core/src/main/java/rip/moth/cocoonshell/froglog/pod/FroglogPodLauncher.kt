@@ -12,4 +12,13 @@ object FroglogPodLauncher {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
+
+    @JvmStatic
+    fun openOutbox(context: Context) {
+        val intent = Intent(context, FroglogPodActivity::class.java).apply {
+            putExtra(FroglogPodActivity.EXTRA_OPEN_OUTBOX, true)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    }
 }

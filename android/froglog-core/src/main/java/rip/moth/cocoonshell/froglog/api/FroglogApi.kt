@@ -73,6 +73,28 @@ class FroglogApi(
         return JSONArray(text)
     }
 
+    fun searchGames(token: String, query: String): JSONArray {
+        val encoded = java.net.URLEncoder.encode(query.trim(), Charsets.UTF_8.name())
+        val req = Request.Builder()
+            .url("$base/search?q=$encoded")
+            .header("Authorization", bearer(token))
+            .get()
+            .build()
+        val (code, text) = execute(req)
+        if (code !in 200..299) return JSONArray()
+        return try {
+            val root = JSONObject(text)
+            when {
+                root.optJSONArray("results") != null -> root.getJSONArray("results")
+                root.optJSONArray("games") != null -> root.getJSONArray("games")
+                text.trimStart().startsWith("[") -> JSONArray(text)
+                else -> JSONArray()
+            }
+        } catch (_: Exception) {
+            JSONArray()
+        }
+    }
+
     fun createGame(token: String, title: String, platform: String?): Int {
         val body = JSONObject()
             .put("title", title)
