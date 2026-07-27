@@ -69,16 +69,27 @@ python3 "${ROOT}/scripts/patch-apk-application-id.py" "$APKTOOL_DIR"
 echo "==> apktool build"
 apktool b "$APKTOOL_DIR" -o "$OUT_APK"
 
-if [[ -x "${ANDROID_HOME}/build-tools/34.0.0/apksigner" ]]; then
+ALIGNED_APK="${ROOT}/android/dist/cocoon-froglog-aligned.apk"
+ZIPALIGN="${ANDROID_HOME}/build-tools/34.0.0/zipalign"
+APKSIGNER="${ANDROID_HOME}/build-tools/34.0.0/apksigner"
+
+if [[ -x "$ZIPALIGN" && -x "$APKSIGNER" ]]; then
+  "$ZIPALIGN" -f -p 4 "$OUT_APK" "$ALIGNED_APK"
+  if ! "$ZIPALIGN" -c -p 4 "$ALIGNED_APK"; then
+    echo "zipalign verification failed" >&2
+    exit 1
+  fi
   KEY="${ROOT}/android/dist/froglog-debug.keystore"
   if [[ ! -f "$KEY" ]]; then
     keytool -genkey -v -keystore "$KEY" -alias froglog -keyalg RSA -keysize 2048 -validity 10000 \
       -storepass android -keypass android -dname "CN=Froglog Cocoon"
   fi
-  "${ANDROID_HOME}/build-tools/34.0.0/apksigner" sign \
+  "$APKSIGNER" sign \
     --ks "$KEY" --ks-pass pass:android --key-pass pass:android \
-    --out "$SIGNED_APK" "$OUT_APK"
+    --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
+    --out "$SIGNED_APK" "$ALIGNED_APK"
+  rm -f "$ALIGNED_APK"
   echo "Signed APK: $SIGNED_APK"
 else
-  echo "Unsigned APK: $OUT_APK (install apksigner to sign)"
+  echo "Unsigned APK: $OUT_APK (install zipalign + apksigner to sign)"
 fi

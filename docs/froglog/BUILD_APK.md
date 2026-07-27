@@ -33,7 +33,7 @@ Published APKs use tags and filenames **`cocoon-froglog-<version>-alpha`** (pre-
 5. Registers the Froglog Pod on the home Pods overlay and adds **Submit to Froglog** on Picnic screenshot detail (`ke/ff.smali`).
 6. Merges Froglog Pod activity + `FroglogInitProvider` into `AndroidManifest.xml`.
 7. Sets application id **`rip.moth.cocoonshell.froglog`** and launcher label **Cocoon (Froglog)**.
-8. Rebuilds and signs the APK.
+8. Rebuilds with apktool, **zipalign -p 4** (required for `extractNativeLibs=false`), then signs with apksigner (v1+v2+v3).
 
 ## On device
 
