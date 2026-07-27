@@ -1,5 +1,7 @@
 # Cocoon
 
+> **CocoonFE-Froglog:** This fork adds [Froglog](https://github.com/Leemotheyer/CocoonFE-Froglog) playtime sync from the Log Pod. See [FROGLOG.md](FROGLOG.md) and [docs/froglog/INTEGRATION_PLAN.md](docs/froglog/INTEGRATION_PLAN.md). Upstream: [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE).
+
 <div align="center">
 
 ![Banner](banner.png)

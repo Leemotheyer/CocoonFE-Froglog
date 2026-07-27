@@ -1,0 +1,21 @@
+# Android / Gradle
+android/.gradle/
+android/.idea/
+android/**/build/
+android/**/local.properties
+android/**/*.iml
+android/.cxx/
+android/**/captures/
+android/**/.externalNativeBuild/
+android/**/google-services.json
+
+# Keystores
+*.jks
+*.keystore
+
+# Import temp
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db

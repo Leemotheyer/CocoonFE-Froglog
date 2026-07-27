@@ -1,0 +1,46 @@
+name: Froglog source import check
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: CocoonFE release tag
+        required: true
+        default: beta-3.0
+  schedule:
+    # Weekly: detect when upstream adds a source archive to releases
+    - cron: '0 12 * * 1'
+
+jobs:
+  probe-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: type gh
+
+      - name: List release assets
+        env:
+          TAG: ${{ github.event.inputs.tag || 'beta-3.0' }}
+        run: |
+          set -euo pipefail
+          echo "Release assets for tag ${TAG}:"
+          gh api "repos/inssekt/CocoonFE/releases/tags/${TAG}" \
+            --jq '.assets[] | "\(.name) (\(.size) bytes)"'
+          if ./scripts/import-cocoon-source-from-release.sh; then
+            echo "Source import succeeded."
+          else
+            code=$?
+            if [[ "$code" -eq 2 ]]; then
+              echo "::notice::No source archive on ${TAG} yet (APK-only release is expected today)."
+              exit 0
+            fi
+            exit "$code"
+          fi
+
+      - name: Verify Gradle root after import
+        if: success() && hashFiles('android/settings.gradle.kts', 'android/settings.gradle') != ''
+        run: |
+          test -f android/SOURCE_VERSION
+          cat android/SOURCE_VERSION
