@@ -141,9 +141,13 @@ Live-service games: user moves title on Froglog → update `froglog_kind` on nex
 
 Docs, import script, upstream remote.
 
-### Phase 1 — Import Cocoon sources
+### Phase 1 — Import Cocoon baseline
 
-Run `scripts/import-cocoon-source-from-release.sh` (downloads `https://github.com/inssekt/CocoonFE/archive/refs/tags/<tag>.zip`).
+```bash
+SOURCE_MODE=apk TAG=beta-3.0 ./scripts/import-cocoon-from-apk.sh
+```
+
+Decompiles [beta-3.0 APK](https://github.com/inssekt/CocoonFE/releases/download/beta-3.0/cocoon-3.apk) to `android/` (see [android/DECOMPILED_BASELINE.md](../../android/DECOMPILED_BASELINE.md)). Implement `froglog-core` and register Froglog Pod.
 
 ### Phase 2 — `froglog-core` + API client
 
