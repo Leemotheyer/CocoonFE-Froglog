@@ -1,186 +1,189 @@
-# Froglog × Cocoon Log Pod — integration plan
+# Froglog × Cocoon — integration plan
 
-This document describes how **CocoonFE-Froglog** will push Log Pod / playtime data to a user’s **Froglog** account. Froglog API details are not finalized yet; see [API_CONTRACT.md](./API_CONTRACT.md) for placeholders and open questions.
+Single **Cocoon Shell** APK with a **Froglog Pod** and a shared **`froglog-core`** module. Playtime from the existing session pipeline syncs to [Froglog API](https://wiki.froglog.co.uk/Api/Documentation); Picnic and other Pods integrate later via `FroglogBridge`.
+
+See also: [API_CONTRACT.md](./API_CONTRACT.md) · [FROGLOG_POD.md](./FROGLOG_POD.md)
 
 ## Goals
 
-- Push **completed game sessions** (and optionally aggregates) from Cocoon to Froglog.
-- Authenticate as the **user’s Froglog account** (mechanism TBD from API docs).
-- Work **offline-first**: queue locally, sync when network is available.
-- Keep **upstream merge path** clear: Cocoon Shell sources live under `android/` after import; Froglog code lives in a dedicated Gradle module.
+- **One app** — same `applicationId` as Cocoon; Froglog is built into this fork, not a separate product.
+- **Froglog Pod** — account, sync control, library linking, stats (see [FROGLOG_POD.md](./FROGLOG_POD.md)).
+- **Automatic session push** — Cocoon `GameSession` → `POST /api/games/:id/sessions` with `sync_ref` for idempotency.
+- **Cross-Pod API** — `FroglogBridge` for Log, Picnic, and future Pods.
+- **Offline-first** — local queue + `WorkManager`; respect Wi‑Fi and rate limits.
 
-## Non-goals (initial release)
+## Non-goals (v1)
 
-- Replacing Cocoon’s local `game_sessions` storage (local DB remains source of truth on device).
-- Bidirectional sync (Froglog → Cocoon) unless the API explicitly supports it later.
-- Syncing Picnic screenshots or full library metadata (playtime / Log Pod scope only).
+- Replacing Cocoon local `game_sessions` (device remains source of truth for tracking).
+- Full bidirectional merge (Froglog edits on web are not written back to Cocoon in v1).
+- Picnic screenshot upload until Froglog exposes an API (bridge method reserved).
 
 ---
 
-## Cocoon side — how Log Pod gets its data today
-
-Cocoon 3 **Log Pod** reads from the same playtime pipeline as widgets and the game info Activity tab:
+## Cocoon playtime pipeline (unchanged)
 
 | Layer | Responsibility |
 |--------|----------------|
-| **GameStateTracker** | Starts/pauses/ends sessions from emulator foreground focus, screen on/off, grace period. |
-| **Session persist** | On end, writes a `GameSession` row to Room (`game_sessions`). |
-| **Log Pod UI** | Daily activity, rankings, share-as-image (not a sync API). |
-| **Export / backup** | JSON export with ROM-stable keys (`playtime_sessions_backup.json` in unified backup). |
+| **GameStateTracker** | Session lifecycle from emulator focus |
+| **Room `game_sessions`** | Persisted sessions |
+| **Log Pod** | Local stats UI only |
+| **Froglog** | Async export via `froglog-core`, not inside Log Pod UI logic |
 
-**Integration hook (preferred):** immediately after a session is successfully inserted into Room, enqueue a Froglog sync event. **Secondary hook:** periodic `WorkManager` job that uploads any rows not yet acknowledged by Froglog.
-
-Reference types (from Cocoon 3 `beta-3.0` APK, names will match imported sources):
-
-- `rip.moth.cocoonshell.data.model.GameSession`
-- `GameSessionDao` / repository wrapping `getAllSessions()`
-- Play history export: `GameSessionsBackup` / per-session DTOs with `game_path`, `platform_id`, `start_time`, `end_time`, `duration_minutes`, `date`
-
-When source is imported, locate the exact save path by searching for `GameSessionDao.insert` and the callback from `GameStateTracker` session end.
+**Hook:** after `GameSessionDao.insert` succeeds → `FroglogBridge.enqueueSession(sessionId)`.
 
 ---
 
-## Target architecture in this fork
+## Repository layout
 
 ```text
-android/                          # Cocoon Shell (imported from upstream release)
-  app/                            # main application module (upstream)
-  froglog-sync/                 # NEW — Froglog client + queue + workers
-docs/froglog/                   # plans + API contract
+android/                          # Cocoon Shell (imported from release)
+  app/                            # Depends on :froglog-core; registers Froglog Pod
+  froglog-core/                   # API, auth, queue, bridge, Pod ViewModels
+docs/froglog/
 scripts/import-cocoon-source-from-release.sh
 ```
 
-### Module: `froglog-sync`
+Rename from earlier `froglog-sync` stub → **`froglog-core`** (sync + API + shared types).
 
-| Component | Purpose |
-|-----------|---------|
-| `FroglogSettings` | DataStore or EncryptedSharedPreferences: base URL (if configurable), credentials/token, sync enabled, Wi‑Fi only. |
-| `FroglogSessionMapper` | Maps `GameSession` (+ optional `Game` join) → Froglog payload (schema TBD). |
-| `FroglogSyncQueue` | Room table or reuse pattern: `id`, `sessionId`, `payloadJson`, `state`, `attempts`, `lastError`. |
-| `FroglogApi` | Ktor/Retrofit client generated from final OpenAPI. |
-| `FroglogSyncWorker` | `WorkManager` periodic + expedited after session end. |
-| `FroglogAuthManager` | Login / API key / OAuth — per API docs. |
+### `froglog-core` modules (packages)
 
-### UI touchpoints
-
-1. **Settings → Accounts (or Integrations)** — connect Froglog, disconnect, test connection, last sync time.
-2. **Log Pod** — optional status chip (“Synced” / “Pending” / “Error”) and “Sync now” action.
-3. **First connect** — deep link or in-app WebView if Froglog uses OAuth (TBD).
-
-### Build / branding
-
-- `applicationId` suffix or product flavor `froglog` (decision when Gradle project exists): e.g. `rip.moth.cocoonshell.froglog` vs same id with feature flag.
-- `BuildConfig.FROGLOG_SYNC_ENABLED = true` in this fork only.
+| Package | Contents |
+|---------|----------|
+| `...froglog.api` | Ktor/Retrofit: auth, games, sessions, search, stats |
+| `...froglog.auth` | JWT storage (EncryptedSharedPreferences), login/register |
+| `...froglog.data` | Room: `froglog_game_links`, `froglog_sync_queue`, DAOs |
+| `...froglog.sync` | Mapper, workers, rate-limit aware drain |
+| `...froglog.bridge` | `FroglogBridge` implementation |
+| `...froglog.pod` | Compose UI used by `FroglogPodActivity` |
 
 ---
 
-## Sync behavior
+## Sync flow
+
+```mermaid
+sequenceDiagram
+  participant GST as GameStateTracker
+  participant Room as game_sessions
+  participant Bridge as FroglogBridge
+  participant Q as sync_queue
+  participant WM as WorkManager
+  participant API as api.froglog.co.uk
+
+  GST->>Room: insert GameSession
+  Room->>Bridge: enqueueSession(id)
+  Bridge->>Q: persist job
+  Bridge->>WM: schedule expedited
+  WM->>Bridge: syncNow / drain
+  Bridge->>API: ensure game link
+  Bridge->>API: POST /games/:id/sessions sync_ref
+  API-->>Bridge: session id
+  Bridge->>Q: mark done
+```
 
 ### Triggers
 
-| Trigger | Behavior |
-|---------|----------|
-| Session completed | Enqueue one event; schedule expedited worker if constraints pass. |
-| App startup | Drain queue; backfill sessions missing `froglog_synced_at` (local marker). |
-| Periodic | e.g. every 6h while charging + Wi‑Fi (user-configurable). |
-| Manual | Log Pod or Settings “Sync now”. |
+| Trigger | Action |
+|---------|--------|
+| Session completed | Enqueue + expedited worker |
+| App start | Drain queue; token check |
+| Periodic | Every 6h (Wi‑Fi, configurable) |
+| Froglog Pod | Manual “Sync now”; login |
+| First login | Backfill unsynced sessions (batched, rate-limit aware) |
 
 ### Idempotency
 
-Assume Froglog (or our client) must cope with retries:
+`sync_ref = "cocoon:session:{GameSession.id}"` on every create (see [API_CONTRACT.md](./API_CONTRACT.md)).
 
-- Client sends a stable **`client_session_key`** derived from Cocoon `GameSession.id` or `(gameId, startTime, endTime)`.
-- Server returns acknowledged IDs; store on session row or side table.
-
-### Conflict policy
-
-- **Cocoon wins** for playtime unless Froglog API defines merges.
-- No deletion sync until API specifies tombstones.
-
-### Constraints (user settings)
-
-- Sync only on Wi‑Fi (default on).
-- Optional: only while charging.
-- Respect Android Doze; use `WorkManager` network constraints.
+Store Froglog `session.id` in `froglog_sync_queue` or a `froglog_session_map` table for updates.
 
 ---
 
-## Payload mapping (draft — fill when API docs arrive)
+## Game matching
 
-Map each completed session to something Froglog can display on a user profile / activity feed:
+1. Local link table hit → use `froglog_game_id`.
+2. Else fuzzy match against cached `GET /api/games` (title + platform).
+3. Else `GET /api/search?q={title}` — auto-pick or prompt in Froglog Pod.
+4. Else `POST /api/games` (watch **60/hour** cap during backfill).
 
-| Cocoon field | Froglog field (TBD) | Notes |
-|--------------|---------------------|--------|
-| `gameId` + ROM path | `game_external_id` | Prefer export-style `game_path` + `platform_id`. |
-| `gameName` | `title` | Display fallback. |
-| `platformId` | `platform` | Cocoon platform slug. |
-| `startTime` / `endTime` | `started_at` / `ended_at` | ISO-8601 UTC. |
-| `durationMinutes` | `duration_seconds` | Convert; sub-minute from `playtime_remainder` optional v2. |
-| `emulatorPackage` | `emulator` | Optional metadata. |
-| `achievementUnlocksJson` | `achievements` | Only if Froglog supports it. |
-
-Aggregates (daily totals, rankings) can be **derived on Froglog** from sessions; only push raw sessions unless the API requires summaries.
+Live-service games: user moves title on Froglog → update `froglog_kind` on next `GET /api/games` / live-service list sync.
 
 ---
 
-## Security & privacy
+## Log Pod vs Froglog Pod
 
-- Store tokens in **EncryptedSharedPreferences** or Android Keystore-backed DataStore.
-- Never log credentials or full tokens.
-- TLS only; certificate pinning optional later.
-- Clear queue on logout; offer “remove my data from this device” locally.
+| | Log Pod | Froglog Pod |
+|---|---------|-------------|
+| Data | Local only | Froglog account + API |
+| Login | No | Yes |
+| Session upload | Via bridge (automatic) | Manual sync + settings |
+| Future | Show sync chip | Full Froglog UX |
+
+---
+
+## Picnic (phase 2+)
+
+- Picnic calls `FroglogBridge.enqueueScreenshot(id)`.
+- Until API exists: document in Pod settings; optional `notes` on session with file path is **not** a substitute — wait for media endpoint.
+
+---
+
+## Security
+
+- JWT in encrypted storage; never log tokens.
+- Production base URL only in release; debug override gated.
+- Clear queue + links on sign out (keep Cocoon local data).
 
 ---
 
 ## Implementation phases
 
-### Phase 0 — Repo prep (this branch)
+### Phase 0 — Repo prep ✅
 
-- [x] Document plan and source import workflow.
-- [x] `android/` placeholder + import script.
-- [ ] Import Cocoon Shell sources when release asset is available (see `android/README.md`).
+Docs, import script, upstream remote.
 
-### Phase 1 — Scaffold with real sources
+### Phase 1 — Import Cocoon sources
 
-- Import `beta-3.0` (or newer) source tree into `android/`.
-- Add `froglog-sync` module; wire into `settings.gradle.kts`.
-- Confirm debug build on CI or local README steps.
+Run `scripts/import-cocoon-source-from-release.sh` when release archive exists.
 
-### Phase 2 — API contract
+### Phase 2 — `froglog-core` + API client
 
-- Replace placeholders in `API_CONTRACT.md` with Froglog OpenAPI.
-- Implement `FroglogApi` + auth flow.
-- Unit tests for mapper and idempotency keys.
+Implement auth, games, sessions, search per [API_CONTRACT.md](./API_CONTRACT.md). Unit tests for mapper and `sync_ref`.
 
-### Phase 3 — Session pipeline
+### Phase 3 — Bridge + session hook
 
-- Hook session insert → enqueue.
-- Implement worker + local sync markers.
-- Settings UI for account linking.
+`GameSession` insert → queue → worker. Game link table.
 
-### Phase 4 — Log Pod UX
+### Phase 4 — Froglog Pod
 
-- Sync status in Log Pod.
-- Manual sync + error surfacing.
+Activity, Pod registration, login, sync UI, stats.
 
-### Phase 5 — Hardening
+### Phase 5 — Log Pod polish
 
-- Rate limits, exponential backoff, analytics-free error reporting.
-- Document user-facing setup in root `README.md`.
+Sync status chip; tap → Froglog Pod.
+
+### Phase 6 — Picnic
+
+When API available, implement screenshot path through bridge.
 
 ---
 
-## Upstream relationship
+## Upstream
 
-- **Git remote `upstream`:** `https://github.com/inssekt/CocoonFE.git` — platform JSON and release APKs.
-- **Platforms:** continue merging `platforms/` from upstream as needed (`scripts/sync-upstream-platforms.sh`).
-- **Android sources:** not in the public git tree today; imported from [GitHub Releases](https://github.com/inssekt/CocoonFE/releases) via `scripts/import-cocoon-source-from-release.sh` when a source archive is published.
+- Platforms: `scripts/sync-upstream-platforms.sh` from `inssekt/CocoonFE`.
+- Android: release source archive; fork-specific code stays in `froglog-core` + thin wiring in `app` to reduce merge pain.
 
----
+## Decisions (locked)
 
-## Open decisions (for you)
+| Topic | Decision |
+|-------|----------|
+| App count | **One** Cocoon APK |
+| Froglog UX shell | **Dedicated Froglog Pod** |
+| Cross-pod integration | **`FroglogBridge`** |
+| Session API | `POST /api/games/:id/sessions` + `sync_ref` |
+| Auth | JWT via login/register |
 
-1. Froglog auth model (API key, OAuth, device code).
-2. Whether Froglog identifies games by ROM hash, path, IGDB id, or custom slug.
-3. Same APK as Cocoon with toggle vs separate `CocoonFE-Froglog` application id.
-4. Whether to sync historical sessions on first link (default: yes, batched).
+## Open (minor)
+
+- Auto vs manual confirm when search returns multiple RAWG hits.
+- Default `is_public` for new sessions.
+- Whether to call `PUT /api/games/:id` to bump `hours_played` or rely on session aggregation server-side.

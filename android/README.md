@@ -33,11 +33,11 @@ Do **not** commit decompiled code into this fork; wait for the official archive.
 
 1. Open `android/` in Android Studio (Giraffe or newer recommended).
 2. Sync Gradle and confirm `:app` assembles.
-3. Add the Froglog module per [docs/froglog/INTEGRATION_PLAN.md](../docs/froglog/INTEGRATION_PLAN.md):
-   - Create `android/froglog-sync/`
-   - `include(":froglog-sync")` in `settings.gradle.kts`
-   - `implementation(project(":froglog-sync"))` in `app`
-4. Search the imported tree for `GameSession` / `GameSessionDao` to wire the sync hook.
+3. Add the **`froglog-core`** module per [docs/froglog/INTEGRATION_PLAN.md](../docs/froglog/INTEGRATION_PLAN.md):
+   - Create `android/froglog-core/`
+   - `include(":froglog-core")` in `settings.gradle.kts`
+   - `implementation(project(":froglog-core"))` in `app`
+4. Register **Froglog Pod** and hook `GameSession` / `FroglogBridge` per [docs/froglog/FROGLOG_POD.md](../docs/froglog/FROGLOG_POD.md).
 
 ## Version pin
 

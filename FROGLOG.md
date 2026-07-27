@@ -1,44 +1,41 @@
 # CocoonFE-Froglog
 
-Fork of [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE) with **Froglog** integration: the Cocoon 3 **Log Pod** will push playtime sessions to a user’s Froglog account.
+Fork of [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE): **one Cocoon app** with a **Froglog Pod** and shared **`froglog-core`** library for API access (Log Pod playtime today, Picnic and others later).
 
 ## Status
 
 | Area | State |
 |------|--------|
-| Platform catalog (`platforms/`) | Same as upstream; use `scripts/sync-upstream-platforms.sh` |
-| Android sources (`android/`) | **Not imported yet** — run `scripts/import-cocoon-source-from-release.sh` when upstream publishes a release source archive |
-| Froglog API client | **Blocked** on API docs — see `docs/froglog/API_CONTRACT.md` |
+| Platform catalog (`platforms/`) | Tracked with upstream |
+| Android sources (`android/`) | Import via `scripts/import-cocoon-source-from-release.sh` when release ships sources |
+| Froglog API | Documented from [wiki.froglog.co.uk/Api](https://wiki.froglog.co.uk/Api) |
+| Froglog Pod + sync code | After source import → `android/froglog-core` |
 
 ## Documentation
 
-- [Integration plan](docs/froglog/INTEGRATION_PLAN.md) — architecture, hooks, phases
-- [API contract (placeholder)](docs/froglog/API_CONTRACT.md) — fill in when Froglog docs are ready
-- [Android import](android/README.md) — how to vendor Cocoon Shell from releases
+| Doc | Contents |
+|-----|----------|
+| [INTEGRATION_PLAN.md](docs/froglog/INTEGRATION_PLAN.md) | Architecture, sync flow, phases |
+| [FROGLOG_POD.md](docs/froglog/FROGLOG_POD.md) | Pod UX, `FroglogBridge`, cross-Pod integration |
+| [API_CONTRACT.md](docs/froglog/API_CONTRACT.md) | Endpoints, mapping, `sync_ref` |
+| [android/README.md](android/README.md) | Import Cocoon Shell sources |
 
-## Remotes
+## Design summary
+
+- **Single APK** — no separate Froglog app; same package as Cocoon in this fork.
+- **Froglog Pod** — login, sync, library linking, stats (like Log / Picnic Pods).
+- **Log Pod** — stays local-first; sessions auto-upload via `FroglogBridge`.
+- **Picnic** — later via the same bridge when Froglog has a media API.
+
+## Developer quick start
 
 ```bash
-git remote add upstream https://github.com/inssekt/CocoonFE.git   # if missing
-git fetch upstream
+git remote add upstream https://github.com/inssekt/CocoonFE.git  # if needed
+chmod +x scripts/*.sh
+TAG=beta-3.0 ./scripts/import-cocoon-source-from-release.sh   # when source zip exists
+# Open android/ in Android Studio, add :froglog-core, register Froglog Pod
 ```
-
-- **origin** — this fork (`Leemotheyer/CocoonFE-Froglog`)
-- **upstream** — platform JSON + official APK releases
-
-## Quick start (developers)
-
-1. Clone this repo and add `upstream` as above.
-2. When a source zip appears on a [CocoonFE release](https://github.com/inssekt/CocoonFE/releases):
-
-   ```bash
-   chmod +x scripts/*.sh
-   TAG=beta-3.0 ./scripts/import-cocoon-source-from-release.sh
-   ```
-
-3. Open `android/` in Android Studio, verify the app builds.
-4. Implement `android/froglog-sync` per the integration plan once API docs exist.
 
 ## Upstream Cocoon
 
-Installation, features, and community links remain in [README.md](README.md).
+Features and install: [README.md](README.md).

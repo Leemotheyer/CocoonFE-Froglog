@@ -1,6 +1,6 @@
 # Cocoon
 
-> **CocoonFE-Froglog:** This fork adds [Froglog](https://github.com/Leemotheyer/CocoonFE-Froglog) playtime sync from the Log Pod. See [FROGLOG.md](FROGLOG.md) and [docs/froglog/INTEGRATION_PLAN.md](docs/froglog/INTEGRATION_PLAN.md). Upstream: [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE).
+> **CocoonFE-Froglog:** One Cocoon app with a **Froglog Pod** (account + sync) and automatic playtime upload from the session tracker. See [FROGLOG.md](FROGLOG.md). Upstream: [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE).
 
 <div align="center">
 

@@ -1,66 +1,143 @@
-# Froglog API contract (placeholder)
+# Froglog API contract (Cocoon integration)
 
-**Status:** waiting on official Froglog API documentation.
+Official docs: [FrogDocs — API](https://wiki.froglog.co.uk/Api) · [Documentation](https://wiki.froglog.co.uk/Api/Documentation) · [Examples](https://wiki.froglog.co.uk/Api/Examples)
 
-When docs are available, update this file (or add `froglog-openapi.yaml` alongside it) and implement `android/froglog-sync` against the real schema.
+## Base URLs
 
-## Expected endpoints (guess — confirm with docs)
+| Environment | Base URL |
+|-------------|----------|
+| Production | `https://api.froglog.co.uk/api` |
+| Development | `http://localhost:3001/api` |
 
-| Method | Path (example) | Purpose |
-|--------|----------------|---------|
-| `POST` | `/auth/token` or `/oauth/token` | Obtain access token |
-| `GET` | `/me` | Validate credentials |
-| `POST` | `/play-sessions` or `/activity` | Upload one or more sessions |
-| `POST` | `/play-sessions/batch` | Bulk historical import |
-| `DELETE` | `/devices/{id}` | Revoke device (optional) |
+Cocoon ships **production** only in release builds; optional dev override in Froglog Pod debug settings.
 
-## Request headers (typical)
+## Authentication
+
+JWT on all routes except `/api/auth/*`.
 
 ```http
-Authorization: Bearer <access_token>
-Content-Type: application/json
-User-Agent: CocoonFE-Froglog/<version> (Android)
-X-Client-Device-Id: <stable uuid per install>
+Authorization: Bearer <jwt>
 ```
 
-## Example session body (draft)
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/auth/register` | `POST` | `{ "username", "password" }` → `{ "token", "username" }` (201) |
+| `/api/auth/login` | `POST` | `{ "username", "password" }` → `{ "token", "username", "avatar_url" }` (200) |
+
+- Token lifetime: **30 days** (per wiki).
+- Store refresh UX: re-login from Froglog Pod when requests return `401`.
+- Rate limit: auth endpoints **20 / 15 min / IP**.
+
+## Endpoints used by Cocoon (v1)
+
+### Library
+
+| Endpoint | Method | Cocoon use |
+|----------|--------|------------|
+| `/api/games` | `GET` | Cache user library; resolve `froglog_game_id` for linked Cocoon games |
+| `/api/games` | `POST` | Create Froglog entry when no match (rate limit **60 / hour / user**) |
+| `/api/games/:id` | `PUT` | Optional metadata refresh (hours, dates) |
+| `/api/search?q=` | `GET` | Match Cocoon title → RAWG/IGDB-enriched results (up to 10) |
+| `/api/search/fetch?title=` | `GET` | Detail for a chosen search hit when adding a game |
+
+### Play sessions (Log Pod / session tracker)
+
+| Endpoint | Method | Cocoon use |
+|----------|--------|------------|
+| `/api/games/:id/sessions` | `GET` | Show recent sessions in Froglog Pod; reconcile after sync |
+| `/api/games/:id/sessions` | `POST` | **Primary upload** for completed Cocoon `GameSession` |
+| `/api/games/:id/sessions/:sessionId` | `PUT` | Correct duration/notes if Cocoon session edited locally |
+| `/api/games/:id/sessions/:sessionId` | `DELETE` | Only if user deletes session in Cocoon and sync-delete is enabled (future) |
+
+**Create session body:**
 
 ```json
 {
-  "client_session_key": "cocoon:game_session:12345",
-  "game": {
-    "platform_id": "Nintendo64",
-    "rom_path": "/storage/.../Mario64.z64",
-    "display_name": "Super Mario 64"
-  },
-  "started_at": "2026-07-27T14:02:00Z",
-  "ended_at": "2026-07-27T15:31:00Z",
-  "duration_seconds": 5340,
-  "emulator_package": "org.dolphinemu.dolphinemu",
-  "source": "cocoon_log_pod"
+  "date": "YYYY-MM-DD",
+  "hours": 1.25,
+  "notes": "optional",
+  "spoiler": false,
+  "is_public": true,
+  "sync_ref": "cocoon:session:<gameSessionId>"
 }
 ```
 
-## Response expectations
+**Idempotency:** use `sync_ref` (documented on API) so retries do not duplicate rows. Format:
 
-Document from Froglog:
+```text
+cocoon:session:{GameSession.id}
+```
 
-- Success status codes and response body (e.g. server-assigned `session_id`).
-- Error codes for auth failure, validation, rate limit (`429`), conflict (`409`).
-- Whether batch responses are partial-success arrays.
+For live-service titles (user moved game on Froglog), use:
 
-## Local implementation checklist (post-docs)
+```text
+POST /api/live-service/:id/sessions
+```
 
-- [ ] Add OpenAPI spec to `docs/froglog/`
-- [ ] Configure Ktor/Retrofit in `froglog-sync`
-- [ ] Map Cocoon `GameSession` fields to documented schema
-- [ ] Implement auth + token refresh if applicable
-- [ ] Add contract tests against Froglog staging environment
+(same body shape per wiki). Cocoon stores whether the linked Froglog row is **library** vs **live-service** in local `froglog_game_links`.
 
-## Questions for Froglog API owners
+### Wishlist / Up Next (later)
 
-1. Authentication and token lifetime / refresh.
-2. Stable game identity across devices (ROM hash vs path vs external IDs).
-3. Idempotency key header name (e.g. `Idempotency-Key`).
-4. Rate limits and recommended batch size for backfill.
-5. Privacy: minimum fields required on public profile vs private log.
+| Endpoint | Method | Future Cocoon use |
+|----------|--------|-------------------|
+| `/api/wishlist` | `GET` / `POST` | “Up Next” in Froglog Pod |
+| `/api/wishlist/:id/move-to-games` | `POST` | Start playing from queue |
+
+### Public / social (Froglog Pod UI)
+
+| Endpoint | Method | Use |
+|----------|--------|-----|
+| `/api/users/:username/stats` | `GET` | Stats tab in Pod |
+| `/api/users/:username/games` | `GET` | Public library preview |
+
+## Cocoon → Froglog field mapping
+
+### Session (`GameSession` → `POST .../sessions`)
+
+| Cocoon | Froglog | Notes |
+|--------|---------|--------|
+| `date` or `startTime` (local TZ) | `date` | `YYYY-MM-DD` |
+| `durationMinutes` | `hours` | `durationMinutes / 60.0`; add sub-minute remainder when available |
+| — | `notes` | e.g. `"Cocoon · {emulatorPackage}"` or achievement summary |
+| user setting | `is_public` | Default `true` |
+| `false` | `spoiler` | Default `false` |
+| stable id | `sync_ref` | `cocoon:session:{id}` |
+
+### Game (first link)
+
+| Cocoon | Froglog `POST /api/games` |
+|--------|---------------------------|
+| scraped / display title | `title` (required) |
+| `platformId` | `platform` |
+| metadata | `description`, `genre`, `dev`, `img` / `cover_image` when known |
+| Steam row | `steam_app_id` when Cocoon has Steam binding |
+| — | `session_tracking: true`, `sessions_public` per user prefs |
+
+Search-first flow: `GET /api/search?q={title}` → user picks or auto-pick best match → `POST /api/games` with enriched fields from `/api/search/fetch` when appropriate.
+
+## Rate limits (client behavior)
+
+| Limit | Handling |
+|-------|----------|
+| Game insert 60/hr | Batch backfill slowly; queue creates |
+| Auth 20/15min | Backoff; no tight retry loops |
+| Wishlist / Steam sync | Not used in v1 |
+
+Read `Retry-After` / rate-limit headers when present; exponential backoff in `WorkManager`.
+
+## Errors
+
+| Code | Action |
+|------|--------|
+| `401` | Clear token validity; prompt login in Froglog Pod |
+| `404` | Game link stale → re-resolve or recreate link |
+| `429` | Reschedule worker |
+
+## Not in API today (Picnic / screenshots)
+
+No screenshot upload endpoint is documented on the wiki. **Picnic integration** should go through `FroglogBridge` with a no-op or “coming soon” until an API exists (notes URL, or future media endpoint).
+
+## References
+
+- [Getting Started](https://wiki.froglog.co.uk/Getting%20Started) — accounts, LilyPad (desktop auto-track; Cocoon is the Android counterpart)
+- [Lilypad](https://wiki.froglog.co.uk/Lilypad) — behavioral reference for session auto-submit

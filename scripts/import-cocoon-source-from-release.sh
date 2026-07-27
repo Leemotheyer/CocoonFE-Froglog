@@ -85,12 +85,12 @@ if [[ -f "${ANDROID_DIR}/README.md" ]]; then
 fi
 
 # Remove old imported tree except README and froglog-sync stub
-find "$ANDROID_DIR" -mindepth 1 -maxdepth 1 ! -name 'README.md' ! -name 'froglog-sync' -exec rm -rf {} +
+find "$ANDROID_DIR" -mindepth 1 -maxdepth 1 ! -name 'README.md' ! -name 'froglog-core' -exec rm -rf {} +
 
 shopt -s dotglob
 for item in "$gradle_root"/*; do
   base="$(basename "$item")"
-  if [[ "$base" == "froglog-sync" ]]; then
+  if [[ "$base" == "froglog-core" ]]; then
     continue
   fi
   cp -a "$item" "${ANDROID_DIR}/"
