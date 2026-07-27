@@ -135,7 +135,9 @@ Read `Retry-After` / rate-limit headers when present; exponential backoff in `Wo
 
 ## Not in API today (Picnic / screenshots)
 
-No screenshot upload endpoint is documented on the wiki. **Picnic integration** should go through `FroglogBridge` with a no-op or “coming soon” until an API exists (notes URL, or future media endpoint).
+The public wiki may not document screenshot uploads yet. Cocoon tries `POST /api/games/:id/screenshots` (multipart `image`, `sync_ref`, optional `caption`) and falls back to a minimal `POST .../sessions` note when that route is unavailable.
+
+Picnic supplies `gameId`, `gameName`, and `platformId` on each `PicnicScreenshotRecord`; Froglog game resolution uses the same linking rules as play sessions (`cocoon:picnic:{id}` `sync_ref`).
 
 ## References
 

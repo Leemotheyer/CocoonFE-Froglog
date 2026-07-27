@@ -3,12 +3,13 @@ package rip.moth.cocoonshell.froglog.data
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import rip.moth.cocoonshell.froglog.PendingPicnicScreenshot
 import rip.moth.cocoonshell.froglog.PendingPlaySession
 
 class FroglogQueueStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun pending(): List<PendingPlaySession> {
+    fun pendingSessions(): List<PendingPlaySession> {
         val raw = prefs.getString(KEY_QUEUE, "[]") ?: "[]"
         val arr = JSONArray(raw)
         return buildList {
@@ -18,21 +19,48 @@ class FroglogQueueStore(context: Context) {
         }
     }
 
+    fun pendingScreenshots(): List<PendingPicnicScreenshot> {
+        val raw = prefs.getString(KEY_PICNIC_QUEUE, "[]") ?: "[]"
+        val arr = JSONArray(raw)
+        return buildList {
+            for (i in 0 until arr.length()) {
+                add(arr.getJSONObject(i).toScreenshot())
+            }
+        }
+    }
+
     fun enqueue(session: PendingPlaySession) {
-        val list = pending().toMutableList()
+        val list = pendingSessions().toMutableList()
         if (list.any { it.clientSessionKey == session.clientSessionKey }) return
         list.add(session)
-        save(list)
+        saveSessions(list)
     }
 
-    fun remove(clientSessionKey: String) {
-        save(pending().filterNot { it.clientSessionKey == clientSessionKey })
+    fun enqueueScreenshot(screenshot: PendingPicnicScreenshot) {
+        val list = pendingScreenshots().toMutableList()
+        if (list.any { it.clientScreenshotKey == screenshot.clientScreenshotKey }) return
+        list.add(screenshot)
+        saveScreenshots(list)
     }
 
-    fun save(sessions: List<PendingPlaySession>) {
+    fun removeSession(clientSessionKey: String) {
+        saveSessions(pendingSessions().filterNot { it.clientSessionKey == clientSessionKey })
+    }
+
+    fun removeScreenshot(clientScreenshotKey: String) {
+        saveScreenshots(pendingScreenshots().filterNot { it.clientScreenshotKey == clientScreenshotKey })
+    }
+
+    fun saveSessions(sessions: List<PendingPlaySession>) {
         val arr = JSONArray()
         sessions.forEach { arr.put(it.toJson()) }
         prefs.edit().putString(KEY_QUEUE, arr.toString()).apply()
+    }
+
+    fun saveScreenshots(screenshots: List<PendingPicnicScreenshot>) {
+        val arr = JSONArray()
+        screenshots.forEach { arr.put(it.toJson()) }
+        prefs.edit().putString(KEY_PICNIC_QUEUE, arr.toString()).apply()
     }
 
     fun gameLink(cocoonGameId: Long): Int? {
@@ -83,9 +111,31 @@ class FroglogQueueStore(context: Context) {
         },
     )
 
+    private fun PendingPicnicScreenshot.toJson(): JSONObject = JSONObject()
+        .put("clientScreenshotKey", clientScreenshotKey)
+        .put("picnicScreenshotId", picnicScreenshotId)
+        .put("cocoonGameId", cocoonGameId)
+        .put("gameName", gameName)
+        .put("platformId", platformId)
+        .put("screenshotUri", screenshotUri)
+        .put("mimeType", mimeType)
+        .put("capturedAtMillis", capturedAtMillis)
+
+    private fun JSONObject.toScreenshot(): PendingPicnicScreenshot = PendingPicnicScreenshot(
+        clientScreenshotKey = getString("clientScreenshotKey"),
+        picnicScreenshotId = getLong("picnicScreenshotId"),
+        cocoonGameId = getLong("cocoonGameId"),
+        gameName = getString("gameName"),
+        platformId = getString("platformId"),
+        screenshotUri = getString("screenshotUri"),
+        mimeType = if (has("mimeType") && !isNull("mimeType")) getString("mimeType") else null,
+        capturedAtMillis = getLong("capturedAtMillis"),
+    )
+
     companion object {
         private const val PREFS = "froglog_queue"
         private const val KEY_QUEUE = "pending"
+        private const val KEY_PICNIC_QUEUE = "pending_picnic"
         private const val KEY_LAST_ERROR = "last_error"
         private const val KEY_LAST_SYNC = "last_sync"
     }

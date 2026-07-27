@@ -1,14 +1,18 @@
 package rip.moth.cocoonshell.froglog.api
 
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import rip.moth.cocoonshell.froglog.BuildConfig
 import rip.moth.cocoonshell.froglog.LoginResult
+import rip.moth.cocoonshell.froglog.PendingPicnicScreenshot
 import rip.moth.cocoonshell.froglog.PendingPlaySession
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 class FroglogApi(
@@ -109,6 +113,39 @@ class FroglogApi(
         if (code == 404) error("Game not found on Froglog")
         if (code !in 200..299) error("Post session failed ($code): $text")
         return JSONObject(text).getInt("id")
+    }
+
+    /**
+     * Preferred Picnic path when the API exposes game screenshots. Falls back to session notes in [FroglogRepository].
+     */
+    fun postGameScreenshot(
+        token: String,
+        froglogGameId: Int,
+        imageFile: File,
+        mimeType: String,
+        syncRef: String,
+        caption: String?,
+    ): Int {
+        val media = mimeType.toMediaType()
+        val body = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("sync_ref", syncRef)
+            .addFormDataPart(
+                "image",
+                imageFile.name,
+                imageFile.asRequestBody(media),
+            )
+        if (!caption.isNullOrBlank()) {
+            body.addFormDataPart("caption", caption)
+        }
+        val req = Request.Builder()
+            .url("$base/games/$froglogGameId/screenshots")
+            .header("Authorization", bearer(token))
+            .post(body.build())
+            .build()
+        val (code, text) = execute(req)
+        if (code !in 200..299) error("Post screenshot failed ($code): $text")
+        return JSONObject(text).optInt("id", 0)
     }
 
     private fun execute(req: Request): Pair<Int, String> {

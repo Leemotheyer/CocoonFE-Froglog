@@ -36,10 +36,17 @@ class FroglogAuthStore(context: Context) {
         prefs.edit().putBoolean(KEY_WIFI_ONLY, value).apply()
     }
 
+    fun picnicAutoUpload(): Boolean = prefs.getBoolean(KEY_PICNIC_AUTO, true)
+
+    fun setPicnicAutoUpload(value: Boolean) {
+        prefs.edit().putBoolean(KEY_PICNIC_AUTO, value).apply()
+    }
+
     companion object {
         private const val PREFS = "froglog_auth"
         private const val KEY_TOKEN = "jwt"
         private const val KEY_USERNAME = "username"
         private const val KEY_WIFI_ONLY = "wifi_only"
+        private const val KEY_PICNIC_AUTO = "picnic_auto_upload"
     }
 }

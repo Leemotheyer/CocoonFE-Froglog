@@ -9,6 +9,7 @@ on:
       - 'android/froglog-core/**'
       - 'scripts/build-froglog-apk.sh'
       - 'scripts/patch-apk-*.py'
+      - 'scripts/apk-extra-res/**'
 
 jobs:
   build-apk:

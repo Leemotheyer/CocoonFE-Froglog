@@ -1,6 +1,7 @@
 package rip.moth.cocoonshell.froglog.bridge
 
 import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -8,13 +9,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 import rip.moth.cocoonshell.froglog.FroglogAuthState
 import rip.moth.cocoonshell.froglog.FroglogSyncState
+import rip.moth.cocoonshell.froglog.PendingPicnicScreenshot
 import rip.moth.cocoonshell.froglog.PendingPlaySession
 import rip.moth.cocoonshell.froglog.api.FroglogApi
 import rip.moth.cocoonshell.froglog.auth.FroglogAuthStore
 import rip.moth.cocoonshell.froglog.data.FroglogQueueStore
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class FroglogRepository(
     context: Context,
@@ -80,13 +86,44 @@ class FroglogRepository(
         )
     }
 
+    fun enqueuePicnicScreenshot(
+        picnicScreenshotId: Long,
+        cocoonGameId: Long,
+        gameName: String,
+        platformId: String,
+        screenshotUri: String,
+        mimeType: String?,
+        capturedAtMillis: Long,
+    ) {
+        if (!auth.picnicAutoUpload() || !auth.authState().isSignedIn) return
+        queue.enqueueScreenshot(
+            PendingPicnicScreenshot(
+                clientScreenshotKey = "cocoon:picnic:$picnicScreenshotId",
+                picnicScreenshotId = picnicScreenshotId,
+                cocoonGameId = cocoonGameId,
+                gameName = gameName,
+                platformId = platformId,
+                screenshotUri = screenshotUri,
+                mimeType = mimeType,
+                capturedAtMillis = capturedAtMillis,
+            ),
+        )
+        refreshSync()
+        scheduleSync()
+    }
+
     override suspend fun syncNow(): Result<Int> = runCatching {
         val token = auth.token() ?: error("Not signed in")
         var uploaded = 0
-        for (session in queue.pending()) {
-            val gameId = resolveFroglogGameId(token, session)
+        for (session in queue.pendingSessions()) {
+            val gameId = resolveFroglogGameId(token, session.cocoonGameId, session.gameName, session.platformId)
             api.postSession(token, gameId, session)
-            queue.remove(session.clientSessionKey)
+            queue.removeSession(session.clientSessionKey)
+            uploaded++
+        }
+        for (shot in queue.pendingScreenshots()) {
+            uploadPicnicScreenshot(token, shot)
+            queue.removeScreenshot(shot.clientScreenshotKey)
             uploaded++
         }
         queue.setLastSyncError(null)
@@ -99,7 +136,7 @@ class FroglogRepository(
     }
 
     override fun enqueueScreenshot(cocoonScreenshotId: Long): Result<Unit> =
-        Result.failure(UnsupportedOperationException("Froglog screenshot API not available yet"))
+        Result.failure(UnsupportedOperationException("Load screenshot record from Picnic first"))
 
     internal fun refreshAuth() {
         _auth.value = auth.authState()
@@ -109,26 +146,93 @@ class FroglogRepository(
         _sync.value = buildSyncState()
     }
 
-    private fun buildSyncState() = FroglogSyncState(
-        pendingCount = queue.pending().size,
-        lastSyncError = queue.lastSyncError(),
-        lastSyncAtMillis = queue.lastSyncAt().takeIf { it > 0L },
-    )
+    private fun buildSyncState(): FroglogSyncState {
+        val sessions = queue.pendingSessions().size
+        val shots = queue.pendingScreenshots().size
+        return FroglogSyncState(
+            pendingCount = sessions + shots,
+            pendingSessionCount = sessions,
+            pendingScreenshotCount = shots,
+            lastSyncError = queue.lastSyncError(),
+            lastSyncAtMillis = queue.lastSyncAt().takeIf { it > 0L },
+        )
+    }
 
-    private fun resolveFroglogGameId(token: String, session: PendingPlaySession): Int {
-        queue.gameLink(session.cocoonGameId)?.let { return it }
+    private fun resolveFroglogGameId(
+        token: String,
+        cocoonGameId: Long,
+        gameName: String,
+        platformId: String,
+    ): Int {
+        queue.gameLink(cocoonGameId)?.let { return it }
         val games = api.listGames(token)
         for (i in 0 until games.length()) {
             val g = games.getJSONObject(i)
-            if (titlesMatch(g.getString("title"), session.gameName)) {
+            if (titlesMatch(g.getString("title"), gameName)) {
                 val id = g.getInt("id")
-                queue.saveGameLink(session.cocoonGameId, id)
+                queue.saveGameLink(cocoonGameId, id)
                 return id
             }
         }
-        val created = api.createGame(token, session.gameName, session.platformId)
-        queue.saveGameLink(session.cocoonGameId, created)
+        val created = api.createGame(token, gameName, platformId)
+        queue.saveGameLink(cocoonGameId, created)
         return created
+    }
+
+    private fun resolveFroglogGameId(token: String, session: PendingPlaySession): Int =
+        resolveFroglogGameId(token, session.cocoonGameId, session.gameName, session.platformId)
+
+    private fun uploadPicnicScreenshot(token: String, shot: PendingPicnicScreenshot) {
+        val gameId = resolveFroglogGameId(token, shot.cocoonGameId, shot.gameName, shot.platformId)
+        val bytes = readScreenshotBytes(shot.screenshotUri)
+        val mime = shot.mimeType?.takeIf { it.isNotBlank() } ?: "image/jpeg"
+        val temp = File.createTempFile("froglog-picnic-", extensionForMime(mime), app.cacheDir)
+        try {
+            temp.writeBytes(bytes)
+            try {
+                api.postGameScreenshot(
+                    token = token,
+                    froglogGameId = gameId,
+                    imageFile = temp,
+                    mimeType = mime,
+                    syncRef = shot.clientScreenshotKey,
+                    caption = "Picnic · ${shot.gameName}",
+                )
+            } catch (uploadEx: Exception) {
+                val session = PendingPlaySession(
+                    clientSessionKey = shot.clientScreenshotKey,
+                    cocoonGameId = shot.cocoonGameId,
+                    gameName = shot.gameName,
+                    platformId = shot.platformId,
+                    date = formatDate(shot.capturedAtMillis),
+                    hours = 0.02,
+                    notes = "Picnic screenshot (${shot.screenshotUri}) — ${uploadEx.message}",
+                )
+                api.postSession(token, gameId, session)
+            }
+        } finally {
+            temp.delete()
+        }
+    }
+
+    private fun readScreenshotBytes(uriString: String): ByteArray {
+        val uri = Uri.parse(uriString)
+        app.contentResolver.openInputStream(uri)?.use { input ->
+            return input.readBytes()
+        }
+        throw IllegalStateException("Could not read screenshot: $uriString")
+    }
+
+    private fun extensionForMime(mime: String): String = when {
+        mime.contains("png", ignoreCase = true) -> ".png"
+        mime.contains("webp", ignoreCase = true) -> ".webp"
+        else -> ".jpg"
+    }
+
+    private fun formatDate(millis: Long): String {
+        val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        fmt.timeZone = TimeZone.getDefault()
+        return fmt.format(Date(millis))
     }
 
     private fun titlesMatch(a: String, b: String): Boolean =

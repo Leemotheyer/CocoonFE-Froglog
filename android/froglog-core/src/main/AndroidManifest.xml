@@ -9,7 +9,7 @@
             android:name=".pod.FroglogPodActivity"
             android:exported="true"
             android:label="@string/froglog_pod_title"
-            android:theme="@style/Theme.FroglogPod" />
+            android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <provider
             android:name=".FroglogInitProvider"

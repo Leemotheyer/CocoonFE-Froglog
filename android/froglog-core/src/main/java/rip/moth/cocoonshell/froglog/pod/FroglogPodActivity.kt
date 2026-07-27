@@ -1,96 +1,71 @@
 package rip.moth.cocoonshell.froglog.pod
 
 import android.os.Bundle
-import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import rip.moth.cocoonshell.froglog.R
+import rip.moth.cocoonshell.froglog.auth.FroglogAuthStore
 import rip.moth.cocoonshell.froglog.bridge.FroglogRepository
-import rip.moth.cocoonshell.froglog.databinding.ActivityFroglogPodBinding
 
-class FroglogPodActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityFroglogPodBinding
+class FroglogPodActivity : ComponentActivity() {
     private lateinit var repo: FroglogRepository
+    private lateinit var authStore: FroglogAuthStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityFroglogPodBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        FroglogPodChrome.apply(this)
         repo = FroglogRepository.get(this)
+        authStore = FroglogAuthStore(this)
 
-        binding.froglogWifiOnly.isChecked = repo.authState.value.let {
-            rip.moth.cocoonshell.froglog.auth.FroglogAuthStore(this).wifiOnly()
-        }
-        binding.froglogWifiOnly.setOnCheckedChangeListener { _, checked ->
-            rip.moth.cocoonshell.froglog.auth.FroglogAuthStore(this).setWifiOnly(checked)
-        }
-
-        binding.froglogLogin.setOnClickListener { doLogin() }
-        binding.froglogRegister.setOnClickListener { doRegister() }
-        binding.froglogSync.setOnClickListener { doSync() }
-        binding.froglogSignOut.setOnClickListener {
-            repo.signOut()
-            render()
-        }
-
-        lifecycleScope.launch {
-            repo.authState.collect { render() }
-        }
-        lifecycleScope.launch {
-            repo.syncState.collect { render() }
-        }
-        render()
-    }
-
-    private fun render() {
-        val auth = repo.authState.value
-        val sync = repo.syncState.value
-        binding.froglogStatus.text = buildString {
-            if (auth.isSignedIn) {
-                append(getString(R.string.froglog_status_signed_in, auth.username))
-            } else {
-                append(getString(R.string.froglog_status_signed_out))
+        setContent {
+            val auth by repo.authState.collectAsStateWithLifecycle()
+            val sync by repo.syncState.collectAsStateWithLifecycle()
+            val scheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+            MaterialTheme(colorScheme = scheme) {
+                FroglogPodScreen(
+                    auth = auth,
+                    sync = sync,
+                    wifiOnly = authStore.wifiOnly(),
+                    picnicAutoUpload = authStore.picnicAutoUpload(),
+                    onWifiOnlyChange = { authStore.setWifiOnly(it) },
+                    onPicnicAutoUploadChange = { authStore.setPicnicAutoUpload(it) },
+                    onLogin = { user, pass ->
+                        lifecycleScope.launch {
+                            repo.login(user, pass)
+                                .onSuccess { toast(getString(R.string.froglog_toast_signed_in)) }
+                                .onFailure { toast(it.message ?: getString(R.string.froglog_error_generic)) }
+                        }
+                    },
+                    onRegister = { user, pass ->
+                        lifecycleScope.launch {
+                            repo.register(user, pass)
+                                .onSuccess { toast(getString(R.string.froglog_toast_registered)) }
+                                .onFailure { toast(it.message ?: getString(R.string.froglog_error_generic)) }
+                        }
+                    },
+                    onSync = {
+                        lifecycleScope.launch {
+                            repo.syncNow()
+                                .onSuccess { toast(getString(R.string.froglog_toast_synced, it)) }
+                                .onFailure { toast(it.message ?: getString(R.string.froglog_error_generic)) }
+                        }
+                    },
+                    onSignOut = {
+                        repo.signOut()
+                        toast(getString(R.string.froglog_toast_signed_out))
+                    },
+                    onBack = { finish() },
+                )
             }
-            append("\n")
-            append(getString(R.string.froglog_pending_queue, sync.pendingCount))
-            sync.lastSyncError?.let { append("\n").append(it) }
-        }
-        val signedIn = auth.isSignedIn
-        binding.froglogUsernameLayout.visibility = if (signedIn) View.GONE else View.VISIBLE
-        binding.froglogPasswordLayout.visibility = if (signedIn) View.GONE else View.VISIBLE
-        binding.froglogLogin.visibility = if (signedIn) View.GONE else View.VISIBLE
-        binding.froglogRegister.visibility = if (signedIn) View.GONE else View.VISIBLE
-        binding.froglogSignOut.visibility = if (signedIn) View.VISIBLE else View.GONE
-        binding.froglogSync.isEnabled = signedIn
-    }
-
-    private fun doLogin() {
-        val user = binding.froglogUsername.text?.toString().orEmpty()
-        val pass = binding.froglogPassword.text?.toString().orEmpty()
-        lifecycleScope.launch {
-            repo.login(user, pass)
-                .onSuccess { toast("Signed in") }
-                .onFailure { toast(it.message ?: getString(R.string.froglog_error_generic)) }
-        }
-    }
-
-    private fun doRegister() {
-        val user = binding.froglogUsername.text?.toString().orEmpty()
-        val pass = binding.froglogPassword.text?.toString().orEmpty()
-        lifecycleScope.launch {
-            repo.register(user, pass)
-                .onSuccess { toast("Account created") }
-                .onFailure { toast(it.message ?: getString(R.string.froglog_error_generic)) }
-        }
-    }
-
-    private fun doSync() {
-        lifecycleScope.launch {
-            repo.syncNow()
-                .onSuccess { toast("Uploaded $it session(s)") }
-                .onFailure { toast(it.message ?: getString(R.string.froglog_error_generic)) }
         }
     }
 

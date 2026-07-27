@@ -7,6 +7,8 @@ data class FroglogAuthState(
 
 data class FroglogSyncState(
     val pendingCount: Int,
+    val pendingSessionCount: Int = pendingCount,
+    val pendingScreenshotCount: Int = 0,
     val lastSyncError: String?,
     val lastSyncAtMillis: Long?,
 )
@@ -20,6 +22,17 @@ data class PendingPlaySession(
     val hours: Double,
     val notes: String? = null,
     val emulatorPackage: String? = null,
+)
+
+data class PendingPicnicScreenshot(
+    val clientScreenshotKey: String,
+    val picnicScreenshotId: Long,
+    val cocoonGameId: Long,
+    val gameName: String,
+    val platformId: String,
+    val screenshotUri: String,
+    val mimeType: String?,
+    val capturedAtMillis: Long,
 )
 
 data class FroglogGameLink(
