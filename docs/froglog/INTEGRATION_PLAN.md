@@ -151,18 +151,18 @@ Decompiles [beta-3.0 APK](https://github.com/inssekt/CocoonFE/releases/download/
 
 ### Phase 2 — `froglog-core` + API client (in progress)
 
-- [x] Module scaffold, OkHttp API, JWT auth, queue, WorkManager
+- [x] Module scaffold, OkHttp API, JWT auth, queue, background sync
 - [x] `FroglogPodActivity`, `FroglogBridge`, `FroglogCocoonHooks`
-- [ ] Wire `GameSession` insert in decompiled Cocoon
-- [ ] Home screen Pod entry (patch `kd/s.java` or equivalent)
+- [x] APK smali hook in `pf/c0` via `scripts/build-froglog-apk.sh`
+- [ ] Home screen Pod entry (patch `jd/r0` / `kd/s` smali)
 
-### Phase 3 — Bridge + session hook
+### Phase 3 — Installable APK
 
-`GameSession` insert → queue → worker. Game link table.
+See [BUILD_APK.md](./BUILD_APK.md). Output: `android/dist/cocoon-froglog.apk`.
 
 ### Phase 4 — Froglog Pod
 
-Activity, Pod registration, login, sync UI, stats.
+Activity in merged manifest; launch via adb or future Pod shortcut.
 
 ### Phase 5 — Log Pod polish
 

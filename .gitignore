@@ -8,11 +8,14 @@ android/gradlew.bat
 android/gradle.properties
 android/SOURCE_VERSION
 
-# Archives from APK import (large)
-android/archives/*.zip
-!android/archives/.gitkeep
+android/.gradle/
+android/**/build/
+android/apktool-cocoon/
+android/dist/
+!android/dist/.gitkeep
 
 # Keep Froglog scaffold in git
 !android/froglog-core/
 !android/README.md
 !android/DECOMPILED_BASELINE.md
+android-sdk/

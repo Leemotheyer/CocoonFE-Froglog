@@ -1,0 +1,46 @@
+name: Build Cocoon Froglog APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cursor/**'
+    paths:
+      - 'android/froglog-core/**'
+      - 'scripts/build-froglog-apk.sh'
+      - 'scripts/patch-apk-*.py'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install apktool
+        run: |
+          curl -fsSL -o /tmp/apktool.jar https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar
+          echo '#!/bin/sh' | sudo tee /usr/local/bin/apktool
+          echo 'exec java -jar /tmp/apktool.jar "$@"' | sudo tee -a /usr/local/bin/apktool
+          sudo chmod +x /usr/local/bin/apktool
+
+      - name: Build merged APK
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/build-froglog-apk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cocoon-froglog-apk
+          path: android/dist/cocoon-froglog.apk
+          retention-days: 14

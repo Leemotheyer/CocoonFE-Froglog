@@ -9,7 +9,7 @@ Fork of [inssekt/CocoonFE](https://github.com/inssekt/CocoonFE): **one Cocoon ap
 | Platform catalog (`platforms/`) | Tracked with upstream |
 | Android sources (`android/`) | Run `scripts/import-cocoon-from-apk.sh` (decompile release APK) or `import-cocoon-source-from-release.sh` (`auto`) |
 | Froglog API | Documented from [wiki.froglog.co.uk/Api](https://wiki.froglog.co.uk/Api) |
-| Froglog Pod + sync code | **`android/froglog-core`** (implementing); wire session hook via `FroglogCocoonHooks` |
+| Froglog Pod + sync code | **`froglog-core`** + `./scripts/build-froglog-apk.sh` → `android/dist/cocoon-froglog.apk` |
 
 ## Documentation
 
@@ -34,7 +34,8 @@ git remote add upstream https://github.com/inssekt/CocoonFE.git  # if needed
 chmod +x scripts/*.sh
 SOURCE_MODE=apk TAG=beta-3.0 ./scripts/import-cocoon-from-apk.sh
 # Or: ./scripts/import-cocoon-source-from-release.sh  # auto → APK decompile
-# Open android/ in Android Studio; froglog-core is already wired after import
+# Build installable Cocoon+Froglog APK:
+# ./scripts/build-froglog-apk.sh
 ```
 
 ## Upstream Cocoon

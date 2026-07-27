@@ -1,14 +1,13 @@
 package rip.moth.cocoonshell.froglog.bridge
 
 import android.content.Context
-import androidx.work.Constraints
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import rip.moth.cocoonshell.froglog.FroglogAuthState
 import rip.moth.cocoonshell.froglog.FroglogSyncState
@@ -16,7 +15,6 @@ import rip.moth.cocoonshell.froglog.PendingPlaySession
 import rip.moth.cocoonshell.froglog.api.FroglogApi
 import rip.moth.cocoonshell.froglog.auth.FroglogAuthStore
 import rip.moth.cocoonshell.froglog.data.FroglogQueueStore
-import rip.moth.cocoonshell.froglog.sync.FroglogSyncWorker
 
 class FroglogRepository(
     context: Context,
@@ -25,6 +23,7 @@ class FroglogRepository(
     private val queue: FroglogQueueStore = FroglogQueueStore(context),
 ) : FroglogBridge {
     private val app = context.applicationContext
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _auth = MutableStateFlow(auth.authState())
     private val _sync = MutableStateFlow(buildSyncState())
@@ -36,14 +35,14 @@ class FroglogRepository(
         val result = api.login(username.trim(), password)
         auth.saveToken(result.token, result.username)
         refreshAuth()
-        scheduleSync(expedited = true)
+        scheduleSync()
     }
 
     override suspend fun register(username: String, password: String): Result<Unit> = runCatching {
         val result = api.register(username.trim(), password)
         auth.saveToken(result.token, result.username)
         refreshAuth()
-        scheduleSync(expedited = true)
+        scheduleSync()
     }
 
     override fun signOut() {
@@ -54,7 +53,7 @@ class FroglogRepository(
     override fun enqueueSession(session: PendingPlaySession) {
         queue.enqueue(session)
         refreshSync()
-        scheduleSync(expedited = true)
+        scheduleSync()
     }
 
     override fun enqueueCocoonGameSession(
@@ -84,8 +83,7 @@ class FroglogRepository(
     override suspend fun syncNow(): Result<Int> = runCatching {
         val token = auth.token() ?: error("Not signed in")
         var uploaded = 0
-        val pending = queue.pending().toMutableList()
-        for (session in pending) {
+        for (session in queue.pending()) {
             val gameId = resolveFroglogGameId(token, session)
             api.postSession(token, gameId, session)
             queue.remove(session.clientSessionKey)
@@ -136,19 +134,11 @@ class FroglogRepository(
     private fun titlesMatch(a: String, b: String): Boolean =
         a.trim().equals(b.trim(), ignoreCase = true)
 
-    private fun scheduleSync(expedited: Boolean) {
-        val network = if (auth.wifiOnly()) NetworkType.UNMETERED else NetworkType.CONNECTED
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(network)
-            .build()
-        val request = OneTimeWorkRequestBuilder<FroglogSyncWorker>()
-            .setConstraints(constraints)
-            .build()
-        WorkManager.getInstance(app).enqueueUniqueWork(
-            FroglogSyncWorker.UNIQUE_NAME,
-            if (expedited) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP,
-            request,
-        )
+    private fun scheduleSync() {
+        if (!auth.authState().isSignedIn) return
+        scope.launch {
+            syncNow()
+        }
     }
 
     companion object {

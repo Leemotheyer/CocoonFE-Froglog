@@ -1,24 +1,10 @@
 package rip.moth.cocoonshell.froglog.auth
 
 import android.content.Context
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import rip.moth.cocoonshell.froglog.FroglogAuthState
 
 class FroglogAuthStore(context: Context) {
-    private val app = context.applicationContext
-    private val prefs by lazy {
-        val masterKey = MasterKey.Builder(app)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            app,
-            PREFS,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
-    }
+    private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun saveToken(token: String, username: String) {
         prefs.edit()
