@@ -36,6 +36,7 @@ jobs:
       - name: Build merged APK
         env:
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
+          FROGLOG_GAME_MENU_PATCH: "1"
         run: |
           chmod +x scripts/*.sh
           ./scripts/build-froglog-apk.sh

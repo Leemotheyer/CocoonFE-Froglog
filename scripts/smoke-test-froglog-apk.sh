@@ -8,12 +8,11 @@ APK="${1:-${ROOT}/android/dist/cocoon-froglog.apk}"
 PKG="rip.moth.cocoonshell.froglog"
 ACTIVITY="${PKG}/rip.moth.cocoonshell.MainActivity"
 ADB="${ADB:-adb}"
-<<<<<<< HEAD
-=======
-if [[ "$ADB" == "adb" && -n "${ANDROID_HOME:-}" && -x "${ANDROID_HOME}/platform-tools/adb" ]]; then
+if [[ -n "${ROOT:-}" && -x "${ROOT}/android-sdk/platform-tools/adb" ]]; then
+  ADB="${ROOT}/android-sdk/platform-tools/adb"
+elif [[ -n "${ANDROID_HOME:-}" && -x "${ANDROID_HOME}/platform-tools/adb" ]]; then
   ADB="${ANDROID_HOME}/platform-tools/adb"
 fi
->>>>>>> origin/cursor/froglog-kotlin-deps-aff8
 WAIT_SEC="${FROGLOG_SMOKE_WAIT_SEC:-25}"
 
 if [[ ! -f "$APK" ]]; then
@@ -32,20 +31,27 @@ if [[ -z "$devices" ]]; then
   [[ "${FROGLOG_SMOKE_REQUIRED:-0}" == "1" ]] && exit 1 || exit 0
 fi
 
+device="$(echo "$devices" | head -1)"
+if [[ $(echo "$devices" | wc -l) -gt 1 ]]; then
+  preferred="$(echo "$devices" | grep -E 'emulator-5554|127\.0\.0\.1:5555' | head -1 || true)"
+  [[ -n "$preferred" ]] && device="$preferred"
+  echo "==> Multiple adb devices; using $device"
+fi
+
 echo "==> Smoke test: uninstall/install $PKG"
-"$ADB" uninstall "$PKG" >/dev/null 2>&1 || true
-"$ADB" install -r "$APK"
+"$ADB" -s "$device" uninstall "$PKG" >/dev/null 2>&1 || true
+"$ADB" -s "$device" install -r "$APK"
 
 echo "==> Clear logcat, cold start MainActivity"
-"$ADB" logcat -c
-"$ADB" shell am force-stop "$PKG" >/dev/null 2>&1 || true
-"$ADB" shell am start -W -n "$ACTIVITY" >/dev/null
+"$ADB" -s "$device" logcat -c
+"$ADB" -s "$device" shell am force-stop "$PKG" >/dev/null 2>&1 || true
+"$ADB" -s "$device" shell am start -W -n "$ACTIVITY" >/dev/null
 
 echo "==> Wait ${WAIT_SEC}s for startup / composition"
 sleep "$WAIT_SEC"
 
 LOG="/tmp/froglog-smoke-logcat.txt"
-"$ADB" logcat -d > "$LOG"
+"$ADB" -s "$device" logcat -d > "$LOG"
 
 if rg -q "VerifyError.*ke\.d0|VerifyError.*ke/d0" "$LOG"; then
   echo "FAIL: VerifyError in ke.d0 (see $LOG)" >&2

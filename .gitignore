@@ -9,6 +9,9 @@ android/gradle.properties
 android/SOURCE_VERSION
 
 android/.gradle/
+android/.gradle-bootstrap/
+android/.tools/
+android/local.properties
 android/**/build/
 android/apktool-cocoon/
 android/archives/

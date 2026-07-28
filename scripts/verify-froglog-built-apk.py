@@ -55,7 +55,13 @@ def check_smali(apktool_dir: Path) -> None:
         if "move-object/from16 v6, p0" in jb:
             raise SystemExit("ke/d0.j: title must be p1 (String), not p0 (wa.a)")
         if "move-object/from16 v6, p1" not in jb:
-            raise SystemExit("ke/d0.j: missing move-object/from16 v6, p1")
+            raise SystemExit("ke/d0.j: missing title load from p1 (v6)")
+        if "move-object/from16 v10, p1" in jb:
+            raise SystemExit("ke/d0.j: must not load title into v10 (register conflict)")
+        if "const/16 v14, 0x3f0" in jb and "FroglogGameMenuAction" in jb:
+            raise SystemExit("ke/d0.j: Froglog w4 patch clobbers v14 (Composer)")
+        if "invoke-direct/range {v4 .. v14}, Lve/w4;" in jb and "FroglogGameMenuAction" in jb:
+            raise SystemExit("ke/d0.j: unsafe v4..v14 w4 range in Froglog patch")
 
     intr = apktool_dir / "smali_classes6/kotlin/jvm/internal/Intrinsics.smali"
     if not intr.is_file():

@@ -7,6 +7,9 @@ import sys
 from pathlib import Path
 
 D0 = "smali_classes3/ke/d0.smali"
+CORRECT_TITLE_LOADS = (
+    "move-object/from16 v6, p1",
+)
 
 
 def extract_method(text: str, name: str, sig: str) -> str:
@@ -40,8 +43,14 @@ def main() -> None:
             raise SystemExit("FroglogGameMenuAction outside ke/d0.j")
         if "move-object/from16 v6, p0" in j:
             raise SystemExit("ke/d0.j game menu must use p1 (String) for title, not p0 (wa.a)")
-        if "move-object/from16 v6, p1" not in j:
-            raise SystemExit("ke/d0.j game menu missing move-object/from16 v6, p1")
+        if not any(pat in j for pat in CORRECT_TITLE_LOADS):
+            raise SystemExit("ke/d0.j game menu missing title load from p1 (v6 or v10)")
+        if "const/16 v14, 0x3f0" in j and "FroglogGameMenuAction" in j:
+            raise SystemExit("ke/d0.j game menu must not clobber v14 (Composer); use v55..v65 for w4")
+        if "invoke-direct/range {v4 .. v14}, Lve/w4;" in j and "FroglogGameMenuAction" in j:
+            raise SystemExit("ke/d0.j game menu must not use v4..v14 w4 range (VerifyError on v14)")
+        if "move-object/from16 v58, v3" not in j or "const-string v56, \"X\"" not in j:
+            raise SystemExit("ke/d0.j game menu missing Froglog w4 row (v55..v65 pattern)")
 
     print("OK: ke/d0 smali checks passed")
 

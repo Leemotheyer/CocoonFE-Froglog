@@ -60,6 +60,10 @@ export FROGLOG_SMOKE_REQUIRED=1   # optional: fail instead of skip when no adb
 
 **Note:** Emulator smoke catches startup / early composition crashes. It does not open every game menu; smali baselines + register checks are what guard the `ke.d0.j` patch.
 
+**Game menu patch:** On by default (`FROGLOG_GAME_MENU_PATCH=1`). Set `FROGLOG_GAME_MENU_PATCH=0` for a build without **Open in Froglog** on the game start menu.
+
+**Windows + BlueStacks:** Use `scripts/build-local.sh` (Git Bash), then `scripts/device-test-bluestacks.ps1`. Use only BlueStacks **HD-Adb** or only SDK `platform-tools/adb` — not both at once on port 5037.
+
 ## On device
 
 ```bash

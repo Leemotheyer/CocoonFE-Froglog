@@ -91,6 +91,7 @@ O0_ANCHOR = """    .line 1593
     filled-new-array {v13, v0}, [Lve/w4;"""
 
 # Game start menu composable is ke/d0.j(Lwa/a; String; Lz0/e0; I) — title is p1, not p0.
+# Use v10/v12 for title/Context (invoke-virtual only allows v0–v15); do not clobber v1 (p0).
 MENU_ANCHOR = O0_ANCHOR  # same smali anchor; only appears in j in Cocoon beta-3.0
 MENU_FROGLOG_BLOCK = """    .line 1593
     .line 1594
@@ -99,15 +100,15 @@ MENU_FROGLOG_BLOCK = """    .line 1593
 
     move-object/from16 v6, p1
 
-    sget-object v1, Landroidx/compose/ui/platform/AndroidCompositionLocals_androidKt;->b:Lz0/m2;
+    sget-object v7, Landroidx/compose/ui/platform/AndroidCompositionLocals_androidKt;->b:Lz0/m2;
 
-    invoke-virtual {v11, v1}, Lz0/e0;->j(Lz0/n1;)Ljava/lang/Object;
+    invoke-virtual {v11, v7}, Lz0/e0;->j(Lz0/n1;)Ljava/lang/Object;
 
-    move-result-object v1
+    move-result-object v7
 
-    check-cast v1, Landroid/content/Context;
+    check-cast v7, Landroid/content/Context;
 
-    invoke-virtual {v11, v1}, Lz0/e0;->h(Ljava/lang/Object;)Z
+    invoke-virtual {v11, v7}, Lz0/e0;->h(Ljava/lang/Object;)Z
 
     move-result v2
 
@@ -130,44 +131,38 @@ MENU_FROGLOG_BLOCK = """    .line 1593
     :froglog_game_remembered
     new-instance v3, Lrip/moth/cocoonshell/froglog/game/FroglogGameMenuAction;
 
-    invoke-direct {v3, v1, v6}, Lrip/moth/cocoonshell/froglog/game/FroglogGameMenuAction;-><init>(Landroid/content/Context;Ljava/lang/String;)V
+    invoke-direct {v3, v7, v6}, Lrip/moth/cocoonshell/froglog/game/FroglogGameMenuAction;-><init>(Landroid/content/Context;Ljava/lang/String;)V
 
     invoke-virtual {v11, v3}, Lz0/e0;->m0(Ljava/lang/Object;)V
 
     :froglog_game_invoke
     check-cast v3, Lwa/a;
 
-    move-object v15, v11
+    new-instance v55, Lve/w4;
 
-    move-object v2, v13
+    const-string v56, "X"
 
-    new-instance v4, Lve/w4;
+    sget-object v57, Lme/b;->CHECK:Lme/b;
 
-    const-string v5, "X"
+    move-object/from16 v58, v3
 
-    sget-object v6, Lme/b;->CHECK:Lme/b;
+    const/16 v59, 0x0
 
-    move-object v7, v3
+    const/16 v60, 0x0
 
-    const/16 v8, 0x0
+    const/16 v61, 0x0
 
-    const/16 v9, 0x0
+    const/16 v62, 0x0
 
-    const/16 v10, 0x0
+    const/16 v63, 0x0
 
-    const/4 v11, 0x0
+    const/16 v64, 0x0
 
-    const/16 v12, 0x0
+    const/16 v65, 0x3f0
 
-    const/16 v13, 0x0
+    invoke-direct/range {v55 .. v65}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
 
-    const/16 v14, 0x3f0
-
-    invoke-direct/range {v4 .. v14}, Lve/w4;-><init>(Ljava/lang/String;Lme/b;Lwa/a;ZLjava/lang/String;FZILve/x4;I)V
-
-    move-object v11, v15
-
-    move-object v13, v2
+    move-object/from16 v4, v55
 
     .line 1596
     .line 1597
@@ -175,13 +170,15 @@ MENU_FROGLOG_BLOCK = """    .line 1593
 
 MENU_MARKER = "filled-new-array {v13, v0, v4}, [Lve/w4;"
 WRONG_TITLE_LOAD = "    move-object/from16 v6, p0"
-CORRECT_TITLE_LOAD = "    move-object/from16 v6, p1"
+CORRECT_TITLE_LOADS = (
+    "    move-object/from16 v6, p1",
+)
 
 
 def fix_wrong_title_register(text: str) -> tuple[str, bool]:
     if WRONG_TITLE_LOAD not in text or MARKER not in text:
         return text, False
-    return text.replace(WRONG_TITLE_LOAD, CORRECT_TITLE_LOAD, 1), True
+    return text.replace(WRONG_TITLE_LOAD, CORRECT_TITLE_LOADS[0], 1), True
 
 
 def revert_a1_wrong_patch(text: str) -> tuple[str, bool]:
